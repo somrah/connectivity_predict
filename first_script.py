@@ -9,8 +9,9 @@ import pandas as pd
 import numpy as np
 
 # replace with wherever you put that file
-csv_file = '/tmp/all_connections.csv'
-
+csv_file ='/Users/lebbe/Downloads/re/all_connections.csv'
+csv_file_behavior_ANTS = '/Users/lebbe/Downloads/behavior_ANTS.csv'
+csv_file_behavior_FSL = '/Users/lebbe/Downloads/behavior_FSL.csv'
 # this is the whole dataframe
 all_connections = pd.read_csv(csv_file, index_col=0)
 
@@ -61,7 +62,8 @@ ANTS_connectivity = average_connectivity[
     average_connectivity.subjectID.isin(ANTS)]
 
 # Todo: do the same with FSL_connectivity
-
+FSL_connectivity = average_connectivity[
+    average_connectivity.subjectID.isin(FSL)]
 ##############################################################################
 # finally compute the  partial/total ratio in each subject 
 ANTS_ratio = {}
@@ -71,5 +73,70 @@ for id_ in unique_ids:
 
 # make a DataFrame from it
 ANTS_ratio = pd.DataFrame(ANTS_ratio)
-
 # ANTS_ratio supposeldy contains some data that are ready for machine learning
+#do the same with FSL_connectivity
+FSL_ratio={}
+for id_ in unique_ids:
+    FSL_ratio[id_] = FSL_connectivity[id_] / (
+    1. + FSL_connectivity[id_+'_total'])
+
+#make a DataFrame from it : 
+FSL_ratio = pd.DataFrame(FSL_ratio)
+
+##############################################################################
+#plot ANTS ratio (corticocortical, corticostriatal, corticothalamic)
+import matplotlib.pyplot as plt
+from math import pi
+#make radar plot corticocortical networks for each subject
+#define number of variables
+def make_spider (row, title, color):
+    categories=list(ANTS_ratio) [0:17]
+    N=len(categories)
+#define the angle for each variable
+    angles=[n/float(N)*2*pi for n in range(N)]
+    angles += angles[:1]
+#initialize the spider plot
+    ax = plt.subplot(2,2,row+1, polar=True, )
+    # Draw one axe per variable + add labels labels yet
+    plt.xticks(angles[:-1], [i.strip('CorticoCortical_') for i in categories], color='black', size=6)
+     
+    # Draw ylabels
+    ax.set_rlabel_position(0)
+    plt.yticks([0.1,0.3,0.5,0.7,0.9], ["0.1","0.3","0.5","0.7","0.9"], color="grey", size=7)
+    plt.ylim(0,0.2)
+     
+    # Ind1
+    values=ANTS_ratio.loc[row].values.flatten().tolist()
+    values += values[:1]
+    ax.plot(angles, values[0:17], color='grey', linewidth=2, linestyle='solid')
+    ax.fill(angles, values [0:17], color='grey', alpha=0.4)
+     
+# Add a title
+    plt.title('corticocortical', size=11, color='grey', y=1.1 ) 
+          # ------- PART 2: Apply to all individuals
+# initialize the figure
+my_dpi=96
+plt.figure(figsize=(1000/my_dpi, 1000/my_dpi), dpi=my_dpi)
+ 
+# Create a color palette:
+my_palette = plt.cm.get_cmap("Set2", len(ANTS_ratio.index))
+ 
+# Loop to plot
+for row in range(0, len(ANTS_ratio.index)):
+    make_spider (row=row, title=ANTS_ratio.index[row], color=my_palette(row))
+
+#behavior_ANTS = pd.read_csv(csv_file_behavior_ANTS, index_col=0)
+#add PIMM (perseveration early postop : 1 indicates the presence of perseveration)
+#ANTS_ratio['PIMM']=behavior_ANTS['PIMM']
+#add 3M (perseveration latepostop : 1 indicates the presence of perseveration)
+#ANTS_ratio['3M']=behavior_ANTS['3M']
+#add boucle (severe perseveration during surgery : 1 indicates the presence of perseveration
+#ANTS_ratio['BOUCLE']=behavior_ANTS['PEROPBOUCLE']
+#plot ratios for subjects with presence of perseveration early postop vs others
+#groups = ANTS_ratio.groupby('PIMM')
+
+
+#FSL_ratio.index
+#behavior_FSL=behavior
+#behavior_FSL(index)
+#ANTS_ratio.index
