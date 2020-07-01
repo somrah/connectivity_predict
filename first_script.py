@@ -9,11 +9,11 @@ import pandas as pd
 import numpy as np
 
 # replace with wherever you put that file
-csv_file ='/Users/lebbe/Downloads/re/all_connections.csv'
-csv_file_behavior = '/Users/lebbe/Downloads/behavior.csv'
+csv_file ='/Users/Downloads/re/all_connections.csv'
+csv_file_behavior = '/Users/Downloads/behavior.csv'
 
 #directory where figures are saved
-mypath = '/Users/lebbe/Downloads/'
+mypath = '/Downloads/'
 
 # this is the whole dataframe
 all_connections = pd.read_csv(csv_file, index_col=0)
