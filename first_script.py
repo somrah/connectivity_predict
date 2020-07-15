@@ -9,11 +9,11 @@ import pandas as pd
 import numpy as np
 
 # replace with wherever you put that file
-csv_file ='/Users/lebbe/Downloads/re/all_connections.csv'
-csv_file_behavior = '/Users/lebbe/Downloads/behavior.csv'
+csv_file ='/Users/Downloads/re/all_connections.csv'
+csv_file_behavior = '/Users/Downloads/behavior.csv'
 
 #directory where figures are saved
-mypath = '/Users/lebbe/Downloads/'
+mypath = '/Downloads/'
 
 # this is the whole dataframe
 all_connections = pd.read_csv(csv_file, index_col=0)
@@ -26,7 +26,7 @@ unique_ids = np.unique([c.split('_')[0] + '_'  + c.split('_')[1]
 
 ##############################################################################
 # aggregate connectivity values from left, right etc.
-# by summing them to a unique values
+# by summing them to a unqiue values
 aggregated_connectivity = {}
 for id_ in unique_ids:
     relevant_ids = [c for c in connection_ids
@@ -523,80 +523,3 @@ plt.savefig(mypath +'corticothalamic_FSL.png', dpi=None, facecolor='w', edgecolo
         orientation='landscape', papertype=None, format=None,
         transparent=False, bbox_inches=None, pad_inches=0.1,
         frameon=None, metadata=None)
-
-##############################################################################
-# predict presence of verbal perseveration by applying random forrest analysis
-
-#verbal perseverations early postop
-
-X=ANTS_ratio.iloc[:, 0:46]
-Y=behavior.iloc[:,3]
-
-#remove subject with nan value from both datasets (here the second line)
-X=X.drop(X.index[1])
-Y=Y.drop(Y.index[1])
-
-from sklearn.model_selection import train_test_split
-X_train, X_test, Y_train, Y_test = train_test_split (X, Y, test_size=0.2, random_state=0)
-
-#this normalisation step makes the performance drop
-#from sklearn.preprocessing import StandardScaler
-#sc = StandardScaler ()
-#X_train= sc.fit_transform (X_train)
-#X_test = sc.fit_transform (X_test)
-
-from sklearn.ensemble import RandomForestClassifier
-classifier=RandomForestClassifier (n_estimators=45, random_state=0)
-classifier.fit(X_train, Y_train)
-Y_pred= classifier.predict(X_test)
-
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
-print (confusion_matrix (Y_test,Y_pred))
-print (classification_report(Y_test,Y_pred))
-print (accuracy_score(Y_test,Y_pred))
-
-importances = classifier.feature_importances_
-std = np.std([tree.feature_importances_ for tree in classifier.estimators_],
-             axis=0)
-indices = np.argsort(importances)[::-1]
-X_column_values=X.columns.values
-
-# Print the feature ranking
-print("Feature ranking:")
-
-for f in range(X.shape[1]):
-    print("%d. feature %s (%f)" % (f + 1, X_column_values[indices[f]], importances[indices[f]]))
-
-# Plot the impurity-based feature importances of the forest
-plt.figure()
-plt.title("Feature importances")
-plt.bar(range(X.shape[1]), importances[indices],
-        color="r", yerr=std[indices], align="center")
-plt.xticks(range(X.shape[1]), X_column_values[indices],rotation=90,size=7)
-plt.xlim([-1, X.shape[1]])
-plt.show()
-
-#afficher les réseaux 4 et 12 de Yeo dans NiLearn
-#import nilearn
-#from nilearn import datasets
-
-# importer l'atlas de yeo (thick 17)
-#atlas_yeo_2011 = datasets.fetch_atlas_yeo_2011()
-#atlas_yeo = atlas_yeo_2011.thick_17
-#atlas_filename = atlas_yeo_2011.colors_17
-#labels = pd.read_txt(atlas_yeo_2011.colors_17, sep=" ")  
-#%% afficher l'atlas de yeo
-#print('Atlas ROIs are located at: %s' % atlas_yeo)
-
-
-#from nilearn import plotting
-
-#plotting.plot_roi(atlas_yeo, title="Yeo 17 thick", colorbar=True)
-#plotting.show()
-#from nilearn import plotting, image
-#connected_label_regions
-#display=plotting.plot_stat_map(image.index_img(atlas_filename,12),colorbar=False, title="12th and 4th parcellation Yeo")
-#display.add_overlay(image.index_img(atlas_filename,4),cmap=plotting.cm.black_blue)
-
-plotting.show()`
-view_img(atlas_yeo)
