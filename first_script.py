@@ -561,6 +561,7 @@ plt.savefig(mypath +'corticothalamic_FSL.png', dpi=None, facecolor='w', edgecolo
 # predict presence of verbal perseveration by applying random forrest analysis
 from sklearn.model_selection import (ShuffleSplit, cross_val_score)
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.decomposition import (IncrementalPCA, SparsePCA)
 #verbal perseverations early postop
 
 #first method
@@ -610,4 +611,45 @@ scores = cross_val_score(clf, X,Y, cv=rs)
 # print accuracy
 print ("Accuracy method bis with transformation: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()*2))
 
+#first method with iPCA
+
+X=ANTS_ratio.iloc[:, 0:46]
+Y=behavior.iloc[:,3]
+
+#remove subject with nan value from both datasets (here the second line)
+X=X.drop(X.index[1])
+Y=Y.drop(Y.index[1])
+#apply iPCA to data
+n_components = None
+ipca = IncrementalPCA(n_components=n_components, batch_size=None)
+X_ipca=ipca.fit_transform(X)
+#we need to perform cross-validation with lots of folds 
+rs = ShuffleSplit(n_splits=100, test_size=.2, random_state=0)
+clf=RandomForestClassifier (n_estimators=45, random_state=0) 
+scores = cross_val_score(clf, X_ipca,Y, cv=rs)
+# print accuracy
+print ("Accuracy first method with iPCA: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()*2))
  
+#first method with sparse PCA
+
+X=ANTS_ratio.iloc[:, 0:46]
+Y=behavior.iloc[:,3]
+
+#remove subject with nan value from both datasets (here the second line)
+X=X.drop(X.index[1])
+Y=Y.drop(Y.index[1])
+#apply sPCA to data
+
+
+transformer = SparsePCA(n_components=5, random_state=0)
+transformer.fit(X)
+SparsePCA(...)
+X_transformed = transformer.transform(X)
+#we need to perform cross-validation with lots of folds 
+rs = ShuffleSplit(n_splits=100, test_size=.2, random_state=0)
+clf=RandomForestClassifier (n_estimators=45, random_state=0) 
+scores = cross_val_score(clf, X_transformed,Y, cv=rs)
+# print accuracy
+print ("Accuracy first method with sPCA: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()*2))
+ 
+
