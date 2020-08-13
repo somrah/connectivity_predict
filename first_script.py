@@ -9,11 +9,11 @@ import pandas as pd
 import numpy as np
 
 # replace with wherever you put that file
-csv_file ='/Users/Downloads/re/all_connections.csv'
-csv_file_behavior = '/Users/Downloads/behavior.csv'
+csv_file ='/Users/lebbe/Downloads/re/all_connections.csv'
+csv_file_behavior = '/Users/lebbe/Downloads/behavior.csv'
 
 #directory where figures are saved
-mypath = '/Downloads/'
+mypath = '/Users/lebbe/Downloads/'
 
 # this is the whole dataframe
 all_connections = pd.read_csv(csv_file, index_col=0)
@@ -26,7 +26,7 @@ unique_ids = np.unique([c.split('_')[0] + '_'  + c.split('_')[1]
 
 ##############################################################################
 # aggregate connectivity values from left, right etc.
-# by summing them to a unqiue values
+# by summing them to a unique values
 aggregated_connectivity = {}
 for id_ in unique_ids:
     relevant_ids = [c for c in connection_ids
@@ -53,19 +53,47 @@ for subject in unique_subjects:
         aggregated_connectivity.subjectID == subject].sum(0)
     # todo: more sophisticated averaging scheme to deal with low values
     # since those values are unreliable
-    
+ 
 # make a dataFrame from it
 average_connectivity = pd.DataFrame(average_connectivity).T
-average_connectivity['subjectID'] = unique_subjects
 
+#add subject ID
+average_connectivity['subjectID'] = unique_subjects
 ##############################################################################
-# Keep onlu ANTS subjects
+#other methods to deal with low values : 
+# method BIS : sum of ratios
+# 1) for each subject make a sum of ratios obtained in each HCP connectome 
+# 2) transform ratios with sigmoid function
+unique_subjects = all_connections['subjectID'].unique()
+ratios_connectivity_bis_HCP = {}
+sumratios_connectivity_bis_subject = {}
+
+for id_ in unique_ids:
+    ratios_connectivity_bis_HCP[id_]= aggregated_connectivity[id_]/(
+        1.+ aggregated_connectivity[id_ + '_total'])
+ratios_connectivity_bis_HCP = pd.DataFrame(ratios_connectivity_bis_HCP)
+ratios_connectivity_bis_HCP['subjectID']=all_connections['subjectID']
+
+for subject in unique_subjects:
+    x=ratios_connectivity_bis_HCP[
+            ratios_connectivity_bis_HCP.subjectID == subject]
+    sumratios_connectivity_bis_subject [subject] = ratios_connectivity_bis_HCP[
+            ratios_connectivity_bis_HCP.subjectID == subject].sum(0)
+sumratios_connectivity_bis_subject = pd.DataFrame(sumratios_connectivity_bis_subject).T
+sumratios_connectivity_bis_subject_transformed= 1/(1+np.exp(np.asarray(-sumratios_connectivity_bis_subject.drop(['subjectID'], axis = 1),dtype=float)))
+sumratios_connectivity_bis_subject_transformed=pd.DataFrame(sumratios_connectivity_bis_subject_transformed)
+sumratios_connectivity_bis_subject_transformed['subjectID'] = unique_subjects
 ANTS = [subject for subject in unique_subjects if subject.endswith('ANTS')]
-FSL = [subject for subject in unique_subjects if subject.endswith('FSL')]
+ANTS_sumratios_connectivity_bis_subject_transformed=sumratios_connectivity_bis_subject_transformed[sumratios_connectivity_bis_subject_transformed.subjectID.isin(ANTS)]
+##############################################################################
+# Keep only ANTS subjects
+ANTS = [subject for subject in unique_subjects if subject.endswith('ANTS')]
+
 ANTS_connectivity = average_connectivity[
     average_connectivity.subjectID.isin(ANTS)]
 
 # Todo: do the same with FSL_connectivity
+FSL = [subject for subject in unique_subjects if subject.endswith('FSL')]
 FSL_connectivity = average_connectivity[
     average_connectivity.subjectID.isin(FSL)]
 ##############################################################################
@@ -77,6 +105,9 @@ for id_ in unique_ids:
 
 # make a DataFrame from it
 ANTS_ratio = pd.DataFrame(ANTS_ratio)
+#transform data with sigmoid function 
+ANTS_ratio_transformed= 1/(1+np.exp(np.asarray(-ANTS_ratio,dtype=float)))
+ANTS_ratio_transformed=pd.DataFrame(ANTS_ratio_transformed)
 # ANTS_ratio supposeldy contains some data that are ready for machine learning
 #do the same with FSL_connectivity
 FSL_ratio={}
@@ -86,7 +117,9 @@ for id_ in unique_ids:
 
 #make a DataFrame from it : 
 FSL_ratio = pd.DataFrame(FSL_ratio)
-
+#transform data with sigmoid function 
+FSL_ratio_transformed= 1/(1+np.exp(np.asarray(-FSL_ratio,dtype=float)))
+FSL_ratio_transformed=pd.DataFrame(FSL_ratio_transformed)
 ##############################################################################
 #plot ANTS ratio (corticocortical, corticostriatal, corticothalamic)
 import matplotlib.pyplot as plt
@@ -523,3 +556,100 @@ plt.savefig(mypath +'corticothalamic_FSL.png', dpi=None, facecolor='w', edgecolo
         orientation='landscape', papertype=None, format=None,
         transparent=False, bbox_inches=None, pad_inches=0.1,
         frameon=None, metadata=None)
+
+##############################################################################
+# predict presence of verbal perseveration by applying random forrest analysis
+from sklearn.model_selection import (ShuffleSplit, cross_val_score)
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.decomposition import (IncrementalPCA, SparsePCA)
+#verbal perseverations early postop
+
+#first method
+
+X=ANTS_ratio.iloc[:, 0:46]
+Y=behavior.iloc[:,3]
+
+#remove subject with nan value from both datasets (here the second line)
+X=X.drop(X.index[1])
+Y=Y.drop(Y.index[1])
+
+#we need to perform cross-validation with lots of folds 
+rs = ShuffleSplit(n_splits=100, test_size=.2, random_state=0)
+clf=RandomForestClassifier (n_estimators=45, random_state=0) 
+scores = cross_val_score(clf, X,Y, cv=rs)
+# print accuracy
+print ("Accuracy first method : %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()*2))
+
+#first method with transformation
+
+X=ANTS_ratio_transformed.iloc[:, 0:46]
+Y=behavior.iloc[:,3]
+
+#remove subject with nan value from both datasets (here the second line)
+X=X.drop(X.index[1])
+Y=Y.drop(Y.index[1])
+
+#we need to perform cross-validation with lots of folds 
+rs = ShuffleSplit(n_splits=100, test_size=.2, random_state=0)
+clf=RandomForestClassifier (n_estimators=45, random_state=0) 
+scores = cross_val_score(clf, X,Y, cv=rs)
+# print accuracy
+print ("Accuracy first method with transformation : %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()*2))
+
+#method bis with transformation
+X=ANTS_sumratios_connectivity_bis_subject_transformed.iloc[:, 0:46]
+Y=behavior.iloc[:,3]
+
+#remove subject with nan value from both datasets (here the second line)
+X=X.drop(X.index[1])
+Y=Y.drop(Y.index[1])
+
+#we need to perform cross-validation with lots of folds 
+rs = ShuffleSplit(n_splits=100, test_size=.2, random_state=0)
+clf=RandomForestClassifier (n_estimators=45, random_state=0) 
+scores = cross_val_score(clf, X,Y, cv=rs)
+# print accuracy
+print ("Accuracy method bis with transformation: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()*2))
+
+#first method with iPCA
+
+X=ANTS_ratio.iloc[:, 0:46]
+Y=behavior.iloc[:,3]
+
+#remove subject with nan value from both datasets (here the second line)
+X=X.drop(X.index[1])
+Y=Y.drop(Y.index[1])
+#apply iPCA to data
+n_components = None
+ipca = IncrementalPCA(n_components=n_components, batch_size=None)
+X_ipca=ipca.fit_transform(X)
+#we need to perform cross-validation with lots of folds 
+rs = ShuffleSplit(n_splits=100, test_size=.2, random_state=0)
+clf=RandomForestClassifier (n_estimators=45, random_state=0) 
+scores = cross_val_score(clf, X_ipca,Y, cv=rs)
+# print accuracy
+print ("Accuracy first method with iPCA: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()*2))
+ 
+#first method with sparse PCA
+
+X=ANTS_ratio.iloc[:, 0:46]
+Y=behavior.iloc[:,3]
+
+#remove subject with nan value from both datasets (here the second line)
+X=X.drop(X.index[1])
+Y=Y.drop(Y.index[1])
+#apply sPCA to data
+
+
+transformer = SparsePCA(n_components=5, random_state=0)
+transformer.fit(X)
+SparsePCA(...)
+X_transformed = transformer.transform(X)
+#we need to perform cross-validation with lots of folds 
+rs = ShuffleSplit(n_splits=100, test_size=.2, random_state=0)
+clf=RandomForestClassifier (n_estimators=45, random_state=0) 
+scores = cross_val_score(clf, X_transformed,Y, cv=rs)
+# print accuracy
+print ("Accuracy first method with sPCA: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std()*2))
+ 
+
