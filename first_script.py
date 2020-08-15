@@ -116,11 +116,11 @@ for id_ in unique_ids:
 
 # make a DataFrame from it
 ANTS_ratio = pd.DataFrame(ANTS_ratio)
-
+ANTS_ratio.name = 'ANTS_ratio'
 #transform data with sigmoid function 
 ANTS_ratio_transformed = 1 / (1 + np.exp(np.asarray(- ANTS_ratio,dtype=float)))
 ANTS_ratio_transformed = pd.DataFrame(ANTS_ratio_transformed)
-
+ANTS_ratio_transformed.name = 'ANTS_ratio_transformed'
 # ANTS_ratio supposeldy contains some data that are ready for machine learning
 # do the same with FSL_connectivity
 FSL_ratio = {}
@@ -130,23 +130,21 @@ for id_ in unique_ids:
 
 # make a DataFrame from it : 
 FSL_ratio = pd.DataFrame(FSL_ratio)
-
+FSL_ratio.name = 'FSL_ratio'
 #transform data with sigmoid function 
 FSL_ratio_transformed = 1 / (1 + np.exp(np.asarray(- FSL_ratio,dtype=float)))
 FSL_ratio_transformed = pd.DataFrame(FSL_ratio_transformed)
-
+FSL_ratio_transformed.name = 'FSL_ratio_transformed'
 ##############################################################################
 #plot ANTS ratio (corticocortical, corticostriatal, corticothalamic)
+# import plotting libraries and pi
 
 import matplotlib.pyplot as plt
 from math import pi
 
-# make radar plot corticocortical networks for each subject
-# define number of variables
+# define radar plot function
 
-
-def make_spider(row, title, color):
-    categories = list(ANTS_ratio)[0:17]
+def make_spider(row, title, liste, color, j, k):
     N = len(categories)
     # define the angle for each variable
     angles = [n / float(N) * 2 * pi for n in range(N)]
@@ -174,7 +172,7 @@ def make_spider(row, title, color):
 
     # Draw one axe per variable + add labels labels yet
     plt.xticks(angles[:-1],
-               [i.strip('CorticoCortical_') for i in categories],
+               [i.partition('_')[2] for i in categories],
                color='black', size=6)
     # Draw ylabels
     ax.set_rlabel_position(0)
@@ -183,403 +181,58 @@ def make_spider(row, title, color):
     plt.ylim(0, 1)
      
     # Ind1
-    values = ANTS_ratio.values[row].flatten().tolist()
+    values = liste.values[row].flatten().tolist()
     values += values[:1]
-    ax.plot(angles[0:17], values[0:17], color=color, linewidth=2,
+    ax.plot(angles[0:-1], values[j:k], color=color, linewidth=2,
             linestyle='solid')
-    ax.fill(angles[0:17], values[0:17], color=color, alpha=0.4)
+    ax.fill(angles[0:-1], values[j:k], color=color, alpha=0.4)
 
     # Add a title
     plt.title(title, size=11, color='grey', y=1.1)
 
-
-# ------- PART 2: Apply to all individuals
-# initialize the figure
-my_dpi = 96
-plt.figure(figsize=(4000/my_dpi, 4000/my_dpi), dpi=my_dpi)
- 
-# Create a color palette:
-my_palette = plt.cm.get_cmap("Set2", len(ANTS_ratio.index))
- 
-# Give a name to big figure
-plt.gcf().text(0.9, 0.9, 'corticocortical_ANTS', fontsize=40)
-# Loop to plot
-for row in range(0, len(ANTS_ratio.index)):
-    make_spider(row=row, title=ANTS_ratio.index[row], color=my_palette(row))
-# save figure 
-plt.savefig(mypath + 'corticocortical_ANTS.png',
-            dpi=None, facecolor='w', edgecolor='w',
-            orientation='landscape', papertype=None, format=None,
-            transparent=False, bbox_inches=None, pad_inches=0.1,
-            frameon=None, metadata=None)
-
-# Make radar plot corticoSTRIATAL (available in dataset n=15)
-# networks for each subject
-# Define number of variables
-
-#### Why do we need to redefine make_spyder ?
-def make_spider(row, title, color):
-    categories = list(ANTS_ratio)[17:32]
-    N = len(categories)
-    # define the angle for each variable
-    angles = [n / float(N) * 2 * pi for n in range(N)]
-    angles += angles[:1]
-    
-    # initialize the spider plot
-    ax = plt.subplot(4,10,row+1, polar=True, )
-    # Add behavior
-    ax.text(0.95, 0.06, 'PV early postop =' + str(behavior.values[row,3]),
-            verticalalignment='bottom', horizontalalignment='right',
-            transform=ax.transAxes,
-            color='blue', fontsize=12)
-    ax.text(0.95, 0.005, 'PV late postop =' + str(behavior.values[row,0]),
-            verticalalignment='bottom', horizontalalignment='right',
-            transform=ax.transAxes,
-            color='red', fontsize=12)
-    ax.text(0.95, 0.11, 'PV boucle perop =' + str(behavior.values[row,2]),
-            verticalalignment='bottom', horizontalalignment='right',
-            transform=ax.transAxes,
-            color='purple', fontsize=12)
-
-    # If you want the first axis to be on top:
-    ax.set_theta_offset(pi / 2)
-    ax.set_theta_direction(-1)
-
-    # Draw one axe per variable + add labels labels yet
-    plt.xticks(angles[:-1],
-               [i.strip('CorticoStriatal_') for i in categories],
-               color='black', size=6)
-    # Draw ylabels
-    ax.set_rlabel_position(0)
-    plt.yticks([0.1, 0.3, 0.5, 0.7, 0.9], ["0.1", "0.3", "0.5", "0.7", "0.9"],
-               color="grey", size=7)
-    plt.ylim(0, 1)
-
-    # Ind1
-    values = ANTS_ratio.values[row].flatten().tolist()
-    values += values[:1]
-    ax.plot(angles[0:15], values[17:32], color=color, linewidth=2,
-            linestyle='solid')
-    ax.fill(angles[0:15], values[17:32], color=color, alpha=0.4)
-
-    # Add a title
-    plt.title(title, size=11, color='grey', y=1.1)
-
-
-# ------- PART 2: Apply to all individuals
-# initialize the figure
-my_dpi = 96
-plt.figure(figsize=(4000/my_dpi, 4000/my_dpi), dpi=my_dpi)
-
-# Create a color palette:
-my_palette = plt.cm.get_cmap("Set3", len(ANTS_ratio.index))
-
-# Give a name to big figure
-plt.gcf().text(0.9, 0.9, 'corticostriatal_ANTS', fontsize=40)
-
-# Loop to plot
-for row in range(0, len(ANTS_ratio.index)):
-    make_spider(row=row,
-                title=ANTS_ratio.index[row],
-                color=my_palette(row))
-# save figure 
-plt.savefig(mypath+'corticostriatal_ANTS.png', dpi=None, facecolor='w',
-            edgecolor='w',
-            orientation='landscape', papertype=None, format=None,
-            transparent=False, bbox_inches=None, pad_inches=0.1,
-            frameon=None, metadata=None)
-
-"""
-# Make radar plot corticoTHALAMIC networks (available in dataset n=14)
-# for each subject
-# Define number of variables
-
-# Note: the function should nit be redefined, but called with different arguments !
-
-
-def make_spider(row, title, color):
-    categories=list(ANTS_ratio) [32:46]
-    N=len(categories)
-    #define the angle for each variable
-    angles=[n/float(N)*2*pi for n in range(N)]
-    angles += angles[:1]
-    
-    #initialize the spider plot
-    ax = plt.subplot(4,10,row+1, polar=True, )
-    #Add behavior
-    #ax.text(3, 8, 'PV early postop =' + str(behavior.values[row,3]), fontsize=14), style='italic',
-     #   bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 10})
-    ax.text(0.95, 0.06, 'PV early postop =' + str(behavior.values[row,3]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='blue', fontsize=12) 
-    
-   # ax.annotate('PV late postop =' + str(behavior[row,0]), fontsize=14, xy=(2, 1), xytext=(3, 4),
-   #arrowprops=dict(facecolor='red', shrink=0.05))
-    ax.text(0.95, 0.005, 'PV late postop =' + str(behavior.values[row,0]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='red', fontsize=12) 
-    ax.text(0.95, 0.11, 'PV boucle perop =' + str(behavior.values[row,2]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='purple', fontsize=12) 
-  
-    # If you want the first axis to be on top:
-    ax.set_theta_offset(pi / 2)
-    ax.set_theta_direction(-1)
-
-    # Draw one axe per variable + add labels labels yet
-    plt.xticks(angles[:-1], [i.strip('CorticoThalamic_') for i in categories], color='black', size=6)
-    #plt.xticks(angles[:-1], categories, color='black', size=6)
-    # Draw ylabels
-    ax.set_rlabel_position(0)
-    plt.yticks([0.1,0.3,0.5,0.7,0.9], ["0.1","0.3","0.5","0.7","0.9"], color="grey", size=7)
-    plt.ylim(0,1)
+def loop_to_plot(liste, j, k):
+    # initialize the figure
+    my_dpi = 96
+    plt.figure(figsize=(4000/my_dpi, 4000/my_dpi), dpi=my_dpi)
      
-    # Ind1
-    values=ANTS_ratio.values[row].flatten().tolist()
-    values += values[:1]
-    ax.plot(angles[0:14], values[32:46], color=color, linewidth=2, linestyle='solid')
-    ax.fill(angles[0:14], values [32:46], color=color, alpha=0.4)
+    # Create a color palette:
+    my_palette = plt.cm.get_cmap("Set2", len(liste.index))
      
-# Add a title
-    plt.title(title, size=11, color='grey', y=1.1 )
+    # Give a name to big figure
+    plt.gcf().text(0.9, 0.9, 
+                   str(categories[0].partition('_')[0]) + '_' 
+                    + liste.name, fontsize=40)
+    # Loop to plot
+    for row in range(0,len(liste.index)):
+        make_spider(row=row, liste = liste, title=liste.index[row], 
+                    color=my_palette(row), j=j, k=k)
+    # save figure 
+    plt.savefig(mypath + str(categories[0].partition('_')[0]) + '_' 
+            + liste.name + '.png', dpi=None,
+            facecolor='w', edgecolor='w', orientation='landscape',
+            papertype=None, format=None,transparent=False, bbox_inches=None, 
+            pad_inches=0.1, frameon=None, metadata=None)
 
-    
-          # ------- PART 2: Apply to all individuals
-# initialize the figure
-my_dpi=96
-plt.figure(figsize=(4000/my_dpi, 4000/my_dpi), dpi=my_dpi)
- 
-# Create a color palette:
-my_palette = plt.cm.get_cmap("Set1", len(ANTS_ratio.index))
- 
-# Give a name to big figure
-plt.gcf().text(0.9, 0.9, 'corticothalamic_ANTS', fontsize=40)
-# Loop to plot
-for row in range(0, len(ANTS_ratio.index)):
-    make_spider (row=row, title=ANTS_ratio.index[row], color=my_palette(row))
-#save figure 
-plt.savefig(mypath + 'corticothalamic_ANTS.png', dpi=None, facecolor='w', edgecolor='w',
-        orientation='landscape', papertype=None, format=None,
-        transparent=False, bbox_inches=None, pad_inches=0.1,
-        frameon=None, metadata=None)
+# Create one figure with all individuals for each level 
+# (CorticoCortical, CorticoStriatal, CorticoThalamic)
 
-#plot FSL ratio (corticocortical, corticostriatal, corticothalamic)
-import matplotlib.pyplot as plt
-from math import pi
-#make radar plot corticocortical networks for each subject
-#define number of variables
-def make_spider (row, title, color):
-    categories=list(FSL_ratio) [0:17]
-    N=len(categories)
-    #define the angle for each variable
-    angles=[n/float(N)*2*pi for n in range(N)]
-    angles += angles[:1]
-    
-    #initialize the spider plot
-    ax = plt.subplot(4,10,row+1, polar=True, )
-    #Add behavior
-    #ax.text(3, 8, 'PV early postop =' + str(behavior.values[row,3]), fontsize=14), style='italic',
-     #   bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 10})
-    ax.text(0.95, 0.06, 'PV early postop =' + str(behavior.values[row,3]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='blue', fontsize=12) 
-    
-   # ax.annotate('PV late postop =' + str(behavior[row,0]), fontsize=14, xy=(2, 1), xytext=(3, 4),
-   #arrowprops=dict(facecolor='red', shrink=0.05))
-    ax.text(0.95, 0.005, 'PV late postop =' + str(behavior.values[row,0]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='red', fontsize=12) 
-    ax.text(0.95, 0.11, 'PV boucle perop =' + str(behavior.values[row,2]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='purple', fontsize=12) 
+# First figure : ANTS CorticoCortical (available in dataset =17)
+j = 0
+k = 17
+categories = list(liste)[j:k] 
+loop_to_plot (liste=ANTS_ratio, j=j, k=k)
+# Second figure ANTS CorticoStriatal (available in dataset n=15)
+j = 17
+k = 32
+categories = list(liste)[j:k] 
+loop_to_plot (liste=ANTS_ratio, j=j, k=k) 
+# Third figure ANTS CorticoThalamic networks (available in dataset n=14)
+j = 32
+k = 46
+categories = list(liste)[j:k] 
+loop_to_plot (liste=ANTS_ratio, j=j, k=k)
 
-    # If you want the first axis to be on top:
-    ax.set_theta_offset(pi / 2)
-    ax.set_theta_direction(-1)
 
-    # Draw one axe per variable + add labels labels yet
-    plt.xticks(angles[:-1], [i.strip('CorticoCortical_') for i in categories], color='black', size=6)
-    #plt.xticks(angles[:-1], categories, color='black', size=6)
-    # Draw ylabels
-    ax.set_rlabel_position(0)
-    plt.yticks([0.1,0.3,0.5,0.7,0.9], ["0.1","0.3","0.5","0.7","0.9"], color="grey", size=7)
-    plt.ylim(0,1)
-     
-    # Ind1
-    values=FSL_ratio.values[row].flatten().tolist()
-    values += values[:1]
-    ax.plot(angles[0:17], values[0:17], color=color, linewidth=2, linestyle='solid')
-    ax.fill(angles[0:17], values [0:17], color=color, alpha=0.4)
-     
-# Add a title
-    plt.title(title, size=11, color='grey', y=1.1 )
-
-    
-          # ------- PART 2: Apply to all individuals
-# initialize the figure
-my_dpi=96
-plt.figure(figsize=(4000/my_dpi, 4000/my_dpi), dpi=my_dpi)
- 
-# Create a color palette:
-my_palette = plt.cm.get_cmap("Set2", len(ANTS_ratio.index))
- 
-# Give a name to big figure
-plt.gcf().text(0.9, 0.9, 'corticocortical_FSL', fontsize=40)
-# Loop to plot
-for row in range(0, len(FSL_ratio.index)):
-    make_spider (row=row, title=FSL_ratio.index[row], color=my_palette(row))
-#save figure 
-plt.savefig(mypath +'corticocortical_FSL.png', dpi=None, facecolor='w', edgecolor='w',
-        orientation='landscape', papertype=None, format=None,
-        transparent=False, bbox_inches=None, pad_inches=0.1,
-        frameon=None, metadata=None)
-
-#make radar plot corticoSTRIATAL (available in dataset n=15) networks for each subject
-#define number of variables
-def make_spider (row, title, color):
-    categories=list(FSL_ratio) [17:32]
-    N=len(categories)
-    #define the angle for each variable
-    angles=[n/float(N)*2*pi for n in range(N)]
-    angles += angles[:1]
-    
-    #initialize the spider plot
-    ax = plt.subplot(4,10,row+1, polar=True, )
-    #Add behavior
-    #ax.text(3, 8, 'PV early postop =' + str(behavior.values[row,3]), fontsize=14), style='italic',
-     #   bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 10})
-    ax.text(0.95, 0.06, 'PV early postop =' + str(behavior.values[row,3]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='blue', fontsize=12) 
-    
-   # ax.annotate('PV late postop =' + str(behavior[row,0]), fontsize=14, xy=(2, 1), xytext=(3, 4),
-   #arrowprops=dict(facecolor='red', shrink=0.05))
-    ax.text(0.95, 0.005, 'PV late postop =' + str(behavior.values[row,0]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='red', fontsize=12) 
-    ax.text(0.95, 0.11, 'PV boucle perop =' + str(behavior.values[row,2]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='purple', fontsize=12) 
-
-    # If you want the first axis to be on top:
-    ax.set_theta_offset(pi / 2)
-    ax.set_theta_direction(-1)
-
-    # Draw one axe per variable + add labels labels yet
-    plt.xticks(angles[:-1], [i.strip('CorticoStriatal_') for i in categories], color='black', size=6)
-    #plt.xticks(angles[:-1], categories, color='black', size=6)
-    # Draw ylabels
-    ax.set_rlabel_position(0)
-    plt.yticks([0.1,0.3,0.5,0.7,0.9], ["0.1","0.3","0.5","0.7","0.9"], color="grey", size=7)
-    plt.ylim(0,1)
-     
-    # Ind1
-    values=FSL_ratio.values[row].flatten().tolist()
-    values += values[:1]
-    ax.plot(angles[0:15], values[17:32], color=color, linewidth=2, linestyle='solid')
-    ax.fill(angles[0:15], values [17:32], color=color, alpha=0.4)
-     
-# Add a title
-    plt.title(title, size=11, color='grey', y=1.1 )
-
-    
-          # ------- PART 2: Apply to all individuals
-# initialize the figure
-my_dpi=96
-plt.figure(figsize=(4000/my_dpi, 4000/my_dpi), dpi=my_dpi)
- 
-# Create a color palette:
-my_palette = plt.cm.get_cmap("Set3", len(FSL_ratio.index))
- 
-# Give a name to big figure
-plt.gcf().text(0.9, 0.9, 'corticostriatal_FSL', fontsize=40)
-# Loop to plot
-for row in range(0, len(FSL_ratio.index)):
-    make_spider (row=row, title=FSL_ratio.index[row], color=my_palette(row))
-#save figure 
-plt.savefig(mypath +'corticostriatal_FSL.png', dpi=None, facecolor='w', edgecolor='w',
-        orientation='landscape', papertype=None, format=None,
-        transparent=False, bbox_inches=None, pad_inches=0.1,
-        frameon=None, metadata=None)
-#make radar plot corticoTHALAMIC networks (available in dataset n=14) for each subject
-#define number of variables
-def make_spider (row, title, color):
-    categories=list(FSL_ratio) [32:46]
-    N=len(categories)
-    #define the angle for each variable
-    angles=[n/float(N)*2*pi for n in range(N)]
-    angles += angles[:1]
-    
-    #initialize the spider plot
-    ax = plt.subplot(4,10,row+1, polar=True, )
-    #Add behavior
-    #ax.text(3, 8, 'PV early postop =' + str(behavior.values[row,3]), fontsize=14), style='italic',
-     #   bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 10})
-    ax.text(0.95, 0.06, 'PV early postop =' + str(behavior.values[row,3]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='blue', fontsize=12) 
-    
-   # ax.annotate('PV late postop =' + str(behavior[row,0]), fontsize=14, xy=(2, 1), xytext=(3, 4),
-   #arrowprops=dict(facecolor='red', shrink=0.05))
-    ax.text(0.95, 0.005, 'PV late postop =' + str(behavior.values[row,0]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='red', fontsize=12) 
-    ax.text(0.95, 0.11, 'PV boucle perop =' + str(behavior.values[row,2]),
-        verticalalignment='bottom', horizontalalignment='right',
-        transform=ax.transAxes,
-        color='purple', fontsize=12) 
-
-    # If you want the first axis to be on top:
-    ax.set_theta_offset(pi / 2)
-    ax.set_theta_direction(-1)
-
-    # Draw one axe per variable + add labels labels yet
-    plt.xticks(angles[:-1], [i.strip('CorticoThalamic_') for i in categories], color='black', size=6)
-    #plt.xticks(angles[:-1], categories, color='black', size=6)
-    # Draw ylabels
-    ax.set_rlabel_position(0)
-    plt.yticks([0.1,0.3,0.5,0.7,0.9], ["0.1","0.3","0.5","0.7","0.9"], color="grey", size=7)
-    plt.ylim(0,1)
-     
-    # Ind1
-    values=FSL_ratio.values[row].flatten().tolist()
-    values += values[:1]
-    ax.plot(angles[0:14], values[32:46], color=color, linewidth=2, linestyle='solid')
-    ax.fill(angles[0:14], values [32:46], color=color, alpha=0.4)
-     
-# Add a title
-    plt.title(title, size=11, color='grey', y=1.1 )
-
-    
-          # ------- PART 2: Apply to all individuals
-# initialize the figure
-my_dpi=96
-plt.figure(figsize=(4000/my_dpi, 4000/my_dpi), dpi=my_dpi)
- 
-# Create a color palette:
-my_palette = plt.cm.get_cmap("Set1", len(FSL_ratio.index))
- 
-# Give a name to big figure
-plt.gcf().text(0.9, 0.9, 'corticothalamic_FSL', fontsize=40)
-# Loop to plot
-for row in range(0, len(FSL_ratio.index)):
-    make_spider (row=row, title=FSL_ratio.index[row], color=my_palette(row))
-#save figure 
-plt.savefig(mypath +'corticothalamic_FSL.png', dpi=None, facecolor='w', edgecolor='w',
-        orientation='landscape', papertype=None, format=None,
-        transparent=False, bbox_inches=None, pad_inches=0.1,
-        frameon=None, metadata=None)
 """
 
 ##############################################################################
