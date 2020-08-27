@@ -298,13 +298,13 @@ print('Mean score of of {:6f} with std. dev. of {:6f}.'.format(nested_score_rf.m
 ###Logistic Regression
 nested_score_lr = np.zeros(4)
 # Set up possible values of parameters to optimize over
-p_grid = {"max_depth": [2, 4, 6, 8], "n_estimators" : [2,4,6,8,10,12,14,16,18,20]}
+p_grid = {"C": [1, 10, 100]}
 lr= LogisticRegression(random_state=0)
 
 # crossvalidation
 inner_cv = KFold(n_splits=4, shuffle=True, random_state=0)
 outer_cv = KFold(n_splits=4, shuffle=True, random_state=0)
 # Nested CV with parameter optimization
-clf = GridSearchCV(estimator=rf, param_grid=p_grid, cv=inner_cv)
+clf = GridSearchCV(estimator=lr, param_grid=p_grid, cv=inner_cv)
 nested_score_lr = cross_val_score(clf, X=X, y=y, cv=outer_cv)
 print('Mean score of of {:6f} with std. dev. of {:6f}.'.format(nested_score_lr.mean(),nested_score_lr.std()))
