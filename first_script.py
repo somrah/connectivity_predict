@@ -219,80 +219,92 @@ def loop_to_plot(liste, j, k):
 # First figure : ANTS CorticoCortical (available in dataset =17)
 j = 0
 k = 17
+liste=ANTS_ratio
 categories = list(liste)[j:k] 
-loop_to_plot (liste=ANTS_ratio, j=j, k=k)
+loop_to_plot (liste=liste, j=j, k=k)
 # Second figure ANTS CorticoStriatal (available in dataset n=15)
 j = 17
 k = 32
 categories = list(liste)[j:k] 
-loop_to_plot (liste=ANTS_ratio, j=j, k=k) 
+loop_to_plot (liste=liste, j=j, k=k) 
 # Third figure ANTS CorticoThalamic networks (available in dataset n=14)
 j = 32
 k = 46
+liste=ANTS_ratio
 categories = list(liste)[j:k] 
-loop_to_plot (liste=ANTS_ratio, j=j, k=k)
+loop_to_plot (liste=liste, j=j, k=k)
 
 
-"""
 
 ##############################################################################
-# predict presence of verbal perseveration by applying random forrest analysis
-from sklearn.model_selection import (ShuffleSplit, cross_val_score)
+# predict presence of verbal perseveration early postop by applying different supervised learning analysis
+from sklearn.svm import SVC
+from sklearn.model_selection import (cross_val_score, KFold, GridSearchCV)
+from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.decomposition import (IncrementalPCA, SparsePCA)
-# verbal perseverations early postop
-#first method
+
+
+#select disconnectome data : here we chose the first method of averaging
 
 X = ANTS_ratio.iloc[:, 0:46]
-Y = behavior.iloc[:, 3]
+y = behavior.iloc[:, 3]
 
 # remove subject with nan value from both datasets (here the second line)
 X = X.drop(X.index[1])
-Y = Y.drop(Y.index[1])
+y = y.drop(y.index[1])
 
-# We need to perform cross-validation with lots of folds 
-rs = ShuffleSplit(n_splits=100, test_size=.2, random_state=0)
-clf = RandomForestClassifier(n_estimators=45, random_state=0) 
-scores = cross_val_score(clf, X, Y, cv=rs)
-# print accuracy
-print("Accuracy first method : %0.2f (+/- %0.2f)" % (
-    scores.mean(), scores.std() * 2))
+####SVC rbf
+nested_score_rbf=np.zeros(4)
+# Set up possible values of parameters to optimize over
+p_grid = {"C": [1, 10, 100],
+          "gamma": [.01, .1]}
+svm = SVC(kernel="rbf") 
+# crossvalidation
+inner_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+outer_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+# Nested CV with parameter optimization
+clf = GridSearchCV(estimator=svm, param_grid=p_grid, cv=inner_cv)
+nested_score_rbf = cross_val_score(clf, X=X, y=y, cv=outer_cv)
+print('Mean score of {:6f} with std. dev. of {:6f}.'.format(nested_score_rbf.mean(),nested_score_rbf.std()))
 
-# first method with transformation
-X = ANTS_ratio.iloc[:, 0:46]
-X = X.drop(X.index[1])
-scores = cross_val_score(clf, X, Y, cv=rs)
+###SVC linear
+nested_score_linear=np.zeros(4)
+# Set up possible values of parameters to optimize over
+p_grid = {"C": [1, 10, 100],
+          "gamma": [.01, .1]}
+svm = SVC(kernel="linear") 
+# crossvalidation
+inner_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+outer_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+# Nested CV with parameter optimization
+clf = GridSearchCV(estimator=svm, param_grid=p_grid, cv=inner_cv)
+nested_score_linear = cross_val_score(clf, X=X, y=y, cv=outer_cv)
+print('Mean score of of {:6f} with std. dev. of {:6f}.'.format(nested_score_linear.mean(),nested_score_linear.std()))
 
-# print accuracy
-print("Accuracy first method with transformation : %0.2f (+/- %0.2f)" % (
-    scores.mean(), scores.std()*2))
+###random forest
+nested_score_rf = np.zeros(4)
+# Set up possible values of parameters to optimize over
+p_grid = {"max_depth": [2, 4, 6, 8], "n_estimators" : [2,4,6,8,10,12,14,16,18,20]}
+rf= RandomForestClassifier(random_state=0)
 
-# method bis with transformation
-X = ANTS_sumratios_connectivity_bis_subject_transformed.iloc[:, 0:46]
-X = X.drop(X.index[1])
-scores = cross_val_score(clf, X,Y, cv=rs)
-# print accuracy
-print ("Accuracy method bis with transformation: %0.2f (+/- %0.2f)" % (
-    scores.mean(), scores.std()*2))
+# crossvalidation
+inner_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+outer_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+# Nested CV with parameter optimization
+clf = GridSearchCV(estimator=rf, param_grid=p_grid, cv=inner_cv)
+nested_score_rf = cross_val_score(clf, X=X, y=y, cv=outer_cv)
+print('Mean score of of {:6f} with std. dev. of {:6f}.'.format(nested_score_rf.mean(),nested_score_rf.std()))
 
-# first method with iPCA
-X = ANTS_ratio.iloc[:, 0:46]
-X = X.drop(X.index[1])
+###Logistic Regression
+nested_score_lr = np.zeros(4)
+# Set up possible values of parameters to optimize over
+p_grid = {"max_depth": [2, 4, 6, 8], "n_estimators" : [2,4,6,8,10,12,14,16,18,20]}
+lr= LogisticRegression(random_state=0)
 
-n_components = None
-ipca = IncrementalPCA(n_components=n_components, batch_size=None)
-X_ipca = ipca.fit_transform(X)
-scores = cross_val_score(clf, X_ipca, Y, cv=rs)
-# print accuracy
-print("Accuracy first method with iPCA: %0.2f (+/- %0.2f)" % (
-    scores.mean(), scores.std()*2))
- 
-# first method with sparse PCA
-transformer = SparsePCA(n_components=5, random_state=0)
-transformer.fit(X)
-X_transformed = transformer.transform(X)
-# we need to perform cross-validation with lots of folds 
-scores = cross_val_score(clf, X_transformed, Y, cv=rs)
-# print accuracy
-print ("Accuracy first method with sPCA: %0.2f (+/- %0.2f)" %
-       (scores.mean(), scores.std()*2))
+# crossvalidation
+inner_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+outer_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+# Nested CV with parameter optimization
+clf = GridSearchCV(estimator=rf, param_grid=p_grid, cv=inner_cv)
+nested_score_lr = cross_val_score(clf, X=X, y=y, cv=outer_cv)
+print('Mean score of of {:6f} with std. dev. of {:6f}.'.format(nested_score_lr.mean(),nested_score_lr.std()))
