@@ -118,53 +118,54 @@ for id_ in unique_ids:
     FSL_ratio[id_] = FSL_connectivity[id_] / (
         1. + FSL_connectivity[id_+'_total'])
 
-# make a DataFrame from it : 
+# Make a DataFrame from it : 
 FSL_ratio = pd.DataFrame(FSL_ratio)
 FSL_ratio.name = 'FSL_ratio'
 
-#transform data with sigmoid function 
-FSL_ratio_transformed = 1 / (1 + np.exp(np.asarray(- FSL_ratio,dtype=float)))
+# Transform data with sigmoid function 
+FSL_ratio_transformed = 1 / (1 + np.exp(np.asarray(- FSL_ratio, dtype=float)))
 FSL_ratio_transformed = pd.DataFrame(FSL_ratio_transformed)
 FSL_ratio_transformed.name = 'FSL_ratio_transformed'
 
 ##############################################################################
-#LISTS ACCORDING TO BEHAVIOR
-#change name of columns with abbreviations to make radar plots more readable
-ANTS_ratio.columns = ANTS_ratio.columns.str.replace(r"CorticoThalamic","CT")
-ANTS_ratio.columns = ANTS_ratio.columns.str.replace(r"CorticoStriatal","CS")
-ANTS_ratio.columns = ANTS_ratio.columns.str.replace(r"CorticoCortical","CC")
-#remove networks for which data are not reliable
-ANTS_ratio_clean = ANTS_ratio.drop(["CC_1","CC_2","CC_3","CC_11","CS_1","CS_2",
-                                    "CS_5","CS_6","CS_14","CT_1","CT_2","CT_3",
-                                    "CT_4","CT_5","CT_6","CT_9","CT_10","CT_11",
-                                    "CT_13","CT_15"], axis=1)
-    
-#change ANTS_ratio_clean index so that behavior and ANTS_ratio have the same index
-ANTS_ratio_clean.index = behavior.index
-ANTS_ratio_clean = ANTS_ratio_clean
-frames = [ANTS_ratio_clean,behavior]
-ANTS_ratio_clean = pd.concat(frames,axis=1)
+# LISTS ACCORDING TO BEHAVIOR
+# change name of columns with abbreviations to make radar plots more readable
+ANTS_ratio.columns = ANTS_ratio.columns.str.replace(r"CorticoThalamic", "CT")
+ANTS_ratio.columns = ANTS_ratio.columns.str.replace(r"CorticoStriatal", "CS")
+ANTS_ratio.columns = ANTS_ratio.columns.str.replace(r"CorticoCortical", "CC")
 
-#defines listes according to behavior of subjects ( cannot make a loop for this)
-A = ANTS_ratio_clean.loc[ANTS_ratio_clean['eVP']== 0]
+# remove networks for which data are not reliable
+unreliable_networks = ["CC_1", "CC_2", "CC_3", "CC_11", "CS_1", "CS_2",
+                       "CS_5", "CS_6", "CS_14", "CT_1", "CT_2", "CT_3",
+                       "CT_4", "CT_5", "CT_6", "CT_9", "CT_10", "CT_11",
+                       "CT_13", "CT_15"]
+ANTS_ratio_clean = ANTS_ratio.drop(unreliable_networks, axis=1)
+
+# change ANTS_ratio_clean index so that behavior and ANTS_ratio have the same index
+ANTS_ratio_clean.index = behavior.index
+ANTS_ratio_clean = pd.concat([ANTS_ratio_clean, behavior],axis=1)
+
+
+# defines listes according to behavior of subjects ( cannot make a loop for this)
+A = ANTS_ratio_clean.loc[ANTS_ratio_clean['eVP'] == 0]
 A.name = "A"
-B = ANTS_ratio_clean.loc[ANTS_ratio_clean['eVP']== 1]
+B = ANTS_ratio_clean.loc[ANTS_ratio_clean['eVP'] == 1]
 B.name = "B"
-C = ANTS_ratio_clean.loc[ANTS_ratio_clean['lVP']== 0]
+C = ANTS_ratio_clean.loc[ANTS_ratio_clean['lVP'] == 0]
 C.name = "C"
-D = ANTS_ratio_clean.loc[ANTS_ratio_clean['lVP']== 1]
+D = ANTS_ratio_clean.loc[ANTS_ratio_clean['lVP'] == 1]
 D.name = "D"
-E = ANTS_ratio_clean.loc[ANTS_ratio_clean['siVP']== 0]
+E = ANTS_ratio_clean.loc[ANTS_ratio_clean['siVP'] == 0]
 E.name = "E"
-F = ANTS_ratio_clean.loc[ANTS_ratio_clean['siVP']== 1]
+F = ANTS_ratio_clean.loc[ANTS_ratio_clean['siVP'] == 1]
 F.name = "F"
-G = F.loc[F['eVP']== 0]
+G = F.loc[F['eVP'] == 0]
 G.name = "G"
-H = F.loc[F['eVP']== 1]
+H = F.loc[F['eVP'] == 1]
 H.name = "H"
-I = H.loc[F['lVP']== 0]
+I = H.loc[F['lVP'] == 0]
 I.name = "I"
-J = H.loc[F['lVP']== 1]
+J = H.loc[F['lVP'] == 1]
 J.name = "J"
 
 AB = A.append(B)
@@ -172,11 +173,10 @@ CD = C.append(D)
 EF = E.append(F)
 IJ = I.append(J)
 
-liste_groupes = [A,B,C,D,E,F,G,H,I,J]
+group_list = [A, B, C, D, E, F, G, H, I, J]
 
-
-for i in liste_groupes : 
-    i.means= i.iloc[:,0:26].mean()
+for i in group_list : 
+    i.means = i.iloc[:,0:26].mean()
 
 means_AB =[A.means, B.means]
 means_CD = [C.means,D.means]
@@ -184,25 +184,7 @@ means_EF = [E.means,F.means]
 means_GH = [G.means, H.means]
 means_IJ = [I.means,J.means]
 
-#liste_comparaisons = [means_AB,means_CD,means_EF, means_GH, means_IJ]
-#for i in liste_comparaisons
-#    i = pd.concat (i,axis=1)
-#    i = i.reset_index()
-#    i["tvalue"]=""
-#    i["pvalue"]=""
-#
-#    for j in i.index : 
-#        i.loc[j,["tvalue"]]=mannwhitneyu(liste_groupes[i][means_AB.iloc[i,0]],
-#                    B[means_AB.iloc[i,0]])[0]
-#        means_AB.loc[i,["pvalue"]]=mannwhitneyu(A[means_AB.iloc[i,0]],
-#                    B[means_AB.iloc[i,0]])[1]
-#    means_AB["reject"]=multipletests(means_AB["pvalue"], alpha=0.05, 
-#            method='fdr_bh', is_sorted=False, returnsorted=False)[0]
-#    means_AB["p_corr"]=multipletests(means_AB["pvalue"], alpha=0.05, 
-#            method='fdr_bh', is_sorted=False, returnsorted=False)[1]
-#    
-#    i.to_excel(r'/Users/lebbe/Downloads/means_AB_disco.xlsx')
-
+stop
 
 ##############################################################################
 #PLOT
@@ -283,7 +265,7 @@ def loop_to_plot2(liste, j, k):
             + liste.name + '.png', dpi=None,
             facecolor='w', edgecolor='w', orientation='landscape',
             papertype=None, format=None,transparent=False, bbox_inches=None, 
-            pad_inches=0.1, facecolor=None, metadata=None)
+            pad_inches=0.1, metadata=None)
 # Figure
 
 for letter in liste_groupes : 
