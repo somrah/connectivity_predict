@@ -5,6 +5,7 @@ compact features for prediction.
 Author: Bertrand Thirion, 2020
 """
 #import libraries
+import os
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -12,7 +13,6 @@ from scipy.stats import mannwhitneyu
 
 import matplotlib.pyplot as plt
 from math import pi
-
 
 from sklearn.svm import SVC
 from sklearn.model_selection import (cross_val_score, KFold, GridSearchCV,
@@ -24,11 +24,17 @@ from sklearn.tree import (DecisionTreeClassifier,export_text)
 
 
 # replace with wherever you put that file
-csv_file ='/Users/lebbe/Downloads/re/all_connections.csv'
-csv_file_behavior = '/Users/lebbe/Downloads/behavior2.csv'
+if 0:
+    data_dir = '/Users/lebbe/Downloads/'
+else:
+    data_dir = os.getcwd()
 
-#directory where figures are saved
-mypath = '/Users/lebbe/Downloads/'
+# setting it only once to better adapt to local configuration 
+csv_file = os.path.join(data_dir, 'all_connections.csv')
+csv_file_behavior = os.path.join(data_dir, 'behavior2.csv')
+
+# directory where figures are saved
+write_dir = data_dir
 
 # this is the whole dataframe
 all_connections = pd.read_csv(csv_file, index_col=0)
@@ -309,7 +315,7 @@ def loop_to_plot2(liste, j, k):
         make_spider2(row=row, liste = liste, title=liste.index[row].split(' ')[0], 
                     color=my_palette(row), j=j, k=k)
     # save figure 
-    plt.savefig(mypath + str(categories[0].partition('_')[0]) + '_' 
+    plt.savefig(write_dir + str(categories[0].partition('_')[0]) + '_' 
             + liste.name + '.png', dpi=None,
             facecolor='w', edgecolor='w', orientation='landscape',
             papertype=None, format=None,transparent=False, bbox_inches=None, 
