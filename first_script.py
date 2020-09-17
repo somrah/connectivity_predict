@@ -84,24 +84,20 @@ average_connectivity['subjectID'] = unique_subjects
 
 
 ##############################################################################
-# Keep only ANTS subjects
+# Separate into ANTS and FSL subjects
 
-# ANTS = [subject for subject in unique_subjects if subject.endswith('ANTS')]
 ANTS = [subject for subject in unique_subjects if subject.endswith('ANTS')]
 ANTS_connectivity = average_connectivity[
     average_connectivity.subjectID.isin(ANTS)]
 
-# Todo: do the same with FSL_connectivity
 FSL = [subject for subject in unique_subjects if subject.endswith('FSL')]
 FSL_connectivity = average_connectivity[
     average_connectivity.subjectID.isin(FSL)]
 
 ##############################################################################
 # finally compute the  partial/total ratio in each subject
+
 ANTS_ratio = {}
-ANTS = [subject for subject in unique_subjects if subject.endswith('ANTS')]
-ANTS_connectivity = average_connectivity[
-    average_connectivity.subjectID.isin(ANTS)]
 for id_ in unique_ids:
     ANTS_ratio[id_] = ANTS_connectivity[id_] / (
         1. + ANTS_connectivity[id_ + '_total'])
@@ -109,10 +105,12 @@ for id_ in unique_ids:
 # make a DataFrame from it
 ANTS_ratio = pd.DataFrame(ANTS_ratio)
 ANTS_ratio.name = 'ANTS_ratio'
-#transform data with sigmoid function 
+
+# transform data with sigmoid function 
 ANTS_ratio_transformed = 1 / (1 + np.exp(np.asarray(- ANTS_ratio,dtype=float)))
 ANTS_ratio_transformed = pd.DataFrame(ANTS_ratio_transformed)
 ANTS_ratio_transformed.name = 'ANTS_ratio_transformed'
+
 # ANTS_ratio supposeldy contains some data that are ready for machine learning
 # do the same with FSL_connectivity
 FSL_ratio = {}
@@ -123,12 +121,11 @@ for id_ in unique_ids:
 # make a DataFrame from it : 
 FSL_ratio = pd.DataFrame(FSL_ratio)
 FSL_ratio.name = 'FSL_ratio'
+
 #transform data with sigmoid function 
 FSL_ratio_transformed = 1 / (1 + np.exp(np.asarray(- FSL_ratio,dtype=float)))
 FSL_ratio_transformed = pd.DataFrame(FSL_ratio_transformed)
 FSL_ratio_transformed.name = 'FSL_ratio_transformed'
-
-
 
 ##############################################################################
 #LISTS ACCORDING TO BEHAVIOR
@@ -286,7 +283,7 @@ def loop_to_plot2(liste, j, k):
             + liste.name + '.png', dpi=None,
             facecolor='w', edgecolor='w', orientation='landscape',
             papertype=None, format=None,transparent=False, bbox_inches=None, 
-            pad_inches=0.1, frameon=None, metadata=None)
+            pad_inches=0.1, facecolor=None, metadata=None)
 # Figure
 
 for letter in liste_groupes : 
