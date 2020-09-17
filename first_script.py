@@ -82,39 +82,6 @@ average_connectivity = pd.DataFrame(average_connectivity).T
 #add subject ID
 average_connectivity['subjectID'] = unique_subjects
 
-##############################################################################
-#other methods to deal with low values :
-# method BIS : sum of ratios
-# 1) for each subject make a sum of ratios obtained in each HCP connectome
-# 2) transform ratios with sigmoid function
-
-#unique_subjects = all_connections['subjectID'].unique()
-#ratios_connectivity_bis_HCP = {}
-#sumratios_connectivity_bis_subject = {}
-#
-#for id_ in unique_ids:
-#    ratios_connectivity_bis_HCP[id_] = aggregated_connectivity[id_] / (
-#        1. + aggregated_connectivity[id_ + '_total'])
-#ratios_connectivity_bis_HCP = pd.DataFrame(ratios_connectivity_bis_HCP)
-#ratios_connectivity_bis_HCP['subjectID'] = all_connections['subjectID']
-#
-#for subject in unique_subjects:
-#    x = ratios_connectivity_bis_HCP[
-#        ratios_connectivity_bis_HCP.subjectID == subject]
-#    sumratios_connectivity_bis_subject[subject] = ratios_connectivity_bis_HCP[
-#        ratios_connectivity_bis_HCP.subjectID == subject].sum(0)
-#sumratios_connectivity_bis_subject = pd.DataFrame(
-#    sumratios_connectivity_bis_subject).T
-#sumratios_connectivity_bis_subject_transformed = 1 / (1 + np.exp(np.asarray(
-#    - sumratios_connectivity_bis_subject.drop(['subjectID'], axis=1),
-#    dtype=float)))
-#sumratios_connectivity_bis_subject_transformed = pd.DataFrame(
-#    sumratios_connectivity_bis_subject_transformed)
-#sumratios_connectivity_bis_subject_transformed['subjectID'] = unique_subjects
-#ANTS = [subject for subject in unique_subjects if subject.endswith('ANTS')]
-#ANTS_sumratios_connectivity_bis_subject_transformed = (
-#    sumratios_connectivity_bis_subject_transformed[
-#        sumratios_connectivity_bis_subject_transformed.subjectID.isin(ANTS)])
 
 ##############################################################################
 # Keep only ANTS subjects
