@@ -178,32 +178,30 @@ group_list = [A, B, C, D, E, F, G, H, I, J]
 for i in group_list : 
     i.means = i.iloc[:,0:26].mean()
 
-means_AB =[A.means, B.means]
-means_CD = [C.means,D.means]
-means_EF = [E.means,F.means]
+means_AB = [A.means, B.means]
+means_CD = [C.means, D.means]
+means_EF = [E.means, F.means]
 means_GH = [G.means, H.means]
-means_IJ = [I.means,J.means]
-
-stop
+means_IJ = [I.means, J.means]
 
 ##############################################################################
-#PLOT
-def make_spider2(row, title, liste, color, j, k):
-    N = len(categories)
+# Plotting functions
+
+def make_spider2(categories, row, title, liste, color, j, k):
+    n_categories = len(categories)
     # define the angle for each variable
-    angles = [n / float(N) * 2 * pi for n in range(N)]
+    angles = [n / float(n_categories) * 2 * pi for n in range(n_categories)]
     angles += angles[:1]   
     # initialize the spider plot
-    ax = plt.subplot(7,5,row+1, polar=True, )
-#
-#    # If you want the first axis to be on top:
+    ax = plt.subplot(7, 5, row + 1, polar=True, )
+
+    # If you want the first axis to be on top:
     ax.set_theta_offset(pi / 2)
     ax.set_theta_direction(-1)
 
     # Draw one axe per variable + add labels labels yet
-    plt.xticks(angles[:-1],
-               [i for i in categories],
-               color='black', size=6)
+    plt.xticks(angles[:-1], [i for i in categories], color='black', size=6)
+
     # Draw ylabels
     ax.set_rlabel_position(0)
     plt.yticks([0.1, 0.3, 0.5, 0.7, 0.9],
@@ -213,44 +211,42 @@ def make_spider2(row, title, liste, color, j, k):
     # Ind1
     values = liste.values[row].flatten().tolist()
     values += values[:1]
-    ax.plot(angles[0:-1], values[j:k], color=color, linewidth=2,
+    ax.plot(angles[0: -1], values[j: k], color=color, linewidth=2,
             linestyle='solid')
-    ax.fill(angles[0:-1], values[j:k], color=color, alpha=0.4)
-   #add information regarding behavior
-        #add information regarding siVP
+    ax.fill(angles[0: -1], values[j: k], color=color, alpha=0.4)
+    # add information regarding behavior
+    # add information regarding siVP
     props_red = dict(boxstyle='circle', facecolor='red', alpha=0.5)
     props_green = dict(boxstyle='circle', facecolor='green', alpha=0.5)
     props_grey = dict(boxstyle='circle', facecolor='grey', alpha=0.5)
-    bhv=[(26,"lVP",0.90),(28,"siVP",1),(29,"eVP",0.95)]
-    for b,h,v in bhv :
-        if liste.values[row,b]==1 : 
-            
-            ax.text(1, v, h + '+',transform=ax.transAxes,fontsize=2, 
-                    verticalalignment = "top" ,bbox=props_red)
-        elif liste.values[row,b]==0:
-            
-            ax.text(1, v, h +'-',transform=ax.transAxes,fontsize=2, 
-                    verticalalignment = "top" ,bbox=props_green)
+    bhv=[(26, "lVP", 0.90), (28, "siVP",1), (29, "eVP", 0.95)]
+    for b, h, v in bhv :
+        if liste.values[row,b] == 1 : 
+            ax.text(1, v, h + '+', transform=ax.transAxes, fontsize=2, 
+                    verticalalignment = "top", bbox=props_red)
+        elif liste.values[row, b]==0:
+            ax.text(1, v, h + '-', transform=ax.transAxes, fontsize=2, 
+                    verticalalignment = "top", bbox=props_green)
         else :
             
-            ax.text(1, v, h + '?',transform=ax.transAxes,fontsize=2, 
-                    verticalalignment = "top" ,bbox=props_grey)
-
+            ax.text(1, v, h + '?', transform=ax.transAxes, fontsize=2, 
+                    verticalalignment = "top", bbox=props_grey)
 
     # Add a title
     plt.title(title, size=11, color='grey', y=1.1)
     
     plt.subplots_adjust(left=0.125,
-                    bottom=0.1, 
-                    right=0.9, 
-                    top=0.9, 
-                    wspace=0.1, 
-                    hspace=0.4)
+                        bottom=0.1, 
+                        right=0.9, 
+                        top=0.9, 
+                        wspace=0.1, 
+                        hspace=0.4)
+
 
 def loop_to_plot2(liste, j, k):
     # initialize the figure
     my_dpi = 300
-    plt.figure(figsize=(7000/my_dpi, 7000/my_dpi), dpi=my_dpi)
+    plt.figure(figsize=(7000 / my_dpi, 7000 / my_dpi), dpi=my_dpi)
     # Create a color palette:
     my_palette = plt.cm.get_cmap("Set2", len(liste.index))
      
@@ -258,23 +254,24 @@ def loop_to_plot2(liste, j, k):
     plt.gcf().text(0.9, 0.9, liste.name[1:], fontsize=40)
     # Loop to plot
     for row in range(0,len(liste.index)):
-        make_spider2(row=row, liste = liste, title=liste.index[row].split(' ')[0], 
-                    color=my_palette(row), j=j, k=k)
+        make_spider2(categories, row=row, liste = liste,
+                     title=liste.index[row].split(' ')[0], 
+                     color=my_palette(row), j=j, k=k)
     # save figure 
     plt.savefig(write_dir + str(categories[0].partition('_')[0]) + '_' 
             + liste.name + '.png', dpi=None,
             facecolor='w', edgecolor='w', orientation='landscape',
             papertype=None, format=None,transparent=False, bbox_inches=None, 
             pad_inches=0.1, metadata=None)
-# Figure
 
-for letter in liste_groupes : 
+# Figure
+for letter in group_list: 
     #define all columns with disconnection ratios in dataframe
     j = 0 
     k = 26
-    liste=letter
+    liste = letter
     categories = list(liste)[j:k] 
-    loop_to_plot2 (liste=liste, j=j, k=k)
+    loop_to_plot2(liste=liste, j=j, k=k)
 
 ##############################################################################
 # PREDICT presence ofsevere intraoperative verbal perseverations (siVP) 
