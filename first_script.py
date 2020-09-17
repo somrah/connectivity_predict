@@ -24,7 +24,7 @@ from sklearn.tree import (DecisionTreeClassifier,export_text)
 
 
 # replace with wherever you put that file
-if 0:
+if 1:
     data_dir = '/Users/lebbe/Downloads/'
 else:
     data_dir = os.getcwd()
@@ -175,9 +175,9 @@ IJ = I.append(J)
 
 group_list = [A, B, C, D, E, F, G, H, I, J]
 
-for i in group_list : 
-    i.means = i.iloc[:,0:26].mean()
-
+for i, group in enumerate(group_list): 
+    group_list[i]['means'] = group.mean()[:26]
+    
 means_AB = [A.means, B.means]
 means_CD = [C.means, D.means]
 means_EF = [E.means, F.means]
@@ -219,7 +219,7 @@ def make_spider2(categories, row, title, liste, color, j, k):
     props_red = dict(boxstyle='circle', facecolor='red', alpha=0.5)
     props_green = dict(boxstyle='circle', facecolor='green', alpha=0.5)
     props_grey = dict(boxstyle='circle', facecolor='grey', alpha=0.5)
-    bhv=[(26, "lVP", 0.90), (28, "siVP",1), (29, "eVP", 0.95)]
+    bhv = [(26, "lVP", 0.90), (28, "siVP",1), (29, "eVP", 0.95)]
     for b, h, v in bhv :
         if liste.values[row,b] == 1 : 
             ax.text(1, v, h + '+', transform=ax.transAxes, fontsize=2, 
@@ -227,14 +227,13 @@ def make_spider2(categories, row, title, liste, color, j, k):
         elif liste.values[row, b]==0:
             ax.text(1, v, h + '-', transform=ax.transAxes, fontsize=2, 
                     verticalalignment = "top", bbox=props_green)
-        else :
-            
+        else :            
             ax.text(1, v, h + '?', transform=ax.transAxes, fontsize=2, 
                     verticalalignment = "top", bbox=props_grey)
 
     # Add a title
     plt.title(title, size=11, color='grey', y=1.1)
-    
+
     plt.subplots_adjust(left=0.125,
                         bottom=0.1, 
                         right=0.9, 
@@ -243,13 +242,13 @@ def make_spider2(categories, row, title, liste, color, j, k):
                         hspace=0.4)
 
 
-def loop_to_plot2(liste, j, k):
+def loop_to_plot2(categories, liste, j, k):
     # initialize the figure
     my_dpi = 300
     plt.figure(figsize=(7000 / my_dpi, 7000 / my_dpi), dpi=my_dpi)
     # Create a color palette:
     my_palette = plt.cm.get_cmap("Set2", len(liste.index))
-     
+
     # Give a name to big figure
     plt.gcf().text(0.9, 0.9, liste.name[1:], fontsize=40)
     # Loop to plot
@@ -266,110 +265,105 @@ def loop_to_plot2(liste, j, k):
 
 # Figure
 for letter in group_list: 
-    #define all columns with disconnection ratios in dataframe
+    # define all columns with disconnection ratios in dataframe
     j = 0 
     k = 26
     liste = letter
     categories = list(liste)[j:k] 
-    loop_to_plot2(liste=liste, j=j, k=k)
+    loop_to_plot2(categories, liste=liste, j=j, k=k)
 
 ##############################################################################
 # PREDICT presence ofsevere intraoperative verbal perseverations (siVP) 
 # by applying different supervised learning analysis
+# select disconnectome data : 
 
-
-
-#select disconnectome data : 
-
-X = EF
+neuro_columns = [
+    'CC_10', 'CC_12', 'CC_13', 'CC_14', 'CC_15', 'CC_16', 'CC_17', 'CC_4',
+    'CC_5', 'CC_6', 'CC_7', 'CC_8', 'CC_9', 'CS_10', 'CS_12', 'CS_13',
+    'CS_16', 'CS_17', 'CS_3', 'CS_4', 'CS_7', 'CS_8', 'CS_9', 'CT_16',
+    'CT_7', 'CT_8']
+X = EF[neuro_columns]
 y = EF["siVP"]
 
-
-####SVC rbf
-nested_score_rbf=np.zeros(4)
+# SVC rbf
+nested_score_rbf = np.zeros(4)
 # Set up possible values of parameters to optimize over
 p_grid = {"C": [1, 10, 100],
           "gamma": [.01, .1]}
 svm = SVC(kernel="rbf") 
-# crossvalidation
+
+# cross-validation
 inner_cv = KFold(n_splits=4, shuffle=True, random_state=0)
 outer_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+
 # Nested CV with parameter optimization
 clf = GridSearchCV(estimator=svm, param_grid=p_grid, cv=inner_cv)
 nested_score_rbf = cross_val_score(clf, X=X, y=y, cv=outer_cv)
 print('Mean score of {:6f} with std. dev. of {:6f}.'
       .format(nested_score_rbf.mean(),nested_score_rbf.std()))
 
-###SVC linear
+# SVC linear
 nested_score_linear=np.zeros(4)
 # Set up possible values of parameters to optimize over
 p_grid = {"C": [1, 10, 100],
           "gamma": [.01, .1]}
 svm = SVC(kernel="linear") 
-# crossvalidation
-inner_cv = KFold(n_splits=4, shuffle=True, random_state=0)
-outer_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+
 # Nested CV with parameter optimization
 clf = GridSearchCV(estimator=svm, param_grid=p_grid, cv=inner_cv)
 nested_score_linear = cross_val_score(clf, X=X, y=y, cv=outer_cv)
 print('Mean score of of {:6f} with std. dev. of {:6f}.'
       .format(nested_score_linear.mean(),nested_score_linear.std()))
 
-###random forest
+# Random forest
 nested_score_rf = np.zeros(4)
 # Set up possible values of parameters to optimize over
 p_grid = {"max_depth": [2, 4, 6, 8], "n_estimators" : 
-    [2,4,6,8,10,12,14,16,18,20]}
-rf= RandomForestClassifier(random_state=0)
+    [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]}
+rf = RandomForestClassifier(random_state=0)
 
-# crossvalidation
-inner_cv = KFold(n_splits=4, shuffle=True, random_state=0)
-outer_cv = KFold(n_splits=4, shuffle=True, random_state=0)
 # Nested CV with parameter optimization
 clf = GridSearchCV(estimator=rf, param_grid=p_grid, cv=inner_cv)
 nested_score_rf = cross_val_score(clf, X=X, y=y, cv=outer_cv)
 print('Mean score of of {:6f} with std. dev. of {:6f}.'
       .format(nested_score_rf.mean(),nested_score_rf.std()))
 
-###Logistic Regression
+# Logistic Regression
 nested_score_lr = np.zeros(4)
 # Set up possible values of parameters to optimize over
 p_grid = {"C": [1, 10, 100]}
-lr= LogisticRegression(random_state=0)
+lr = LogisticRegression(random_state=0)
 
-# crossvalidation
-inner_cv = KFold(n_splits=4, shuffle=True, random_state=0)
-outer_cv = KFold(n_splits=4, shuffle=True, random_state=0)
 # Nested CV with parameter optimization
 clf = GridSearchCV(estimator=lr, param_grid=p_grid, cv=inner_cv)
 nested_score_lr = cross_val_score(clf, X=X, y=y, cv=outer_cv)
 print('Mean score of of {:6f} with std. dev. of {:6f}.'
       .format(nested_score_lr.mean(),nested_score_lr.std()))
 
-#####TREE
-
+# TREE
 X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.33, random_state=0)
 clf = tree.DecisionTreeClassifier()
 clf = clf.fit(X_train, y_train)
 tree.plot_tree(clf)
 clf.score(X_test, y_test)
-
-r = export_text(clf,X.columns)
+r = export_text(clf, list(X.columns))
 print(r)
 
-#NESTED CROSSVALIDATION
+# Nested cross-validation
 nested_score_rf = np.zeros(4)
-# Set up possible values of parameters to optimize over
-p_grid = {"max_depth": [2, 4, 6, 8], "min_samples_leaf" : [1,2,3,4,5]}
-rf= tree.DecisionTreeClassifier(random_state=0)
 
-# crossvalidation
-inner_cv = KFold(n_splits=4, shuffle=True, random_state=0)
-outer_cv = KFold(n_splits=4, shuffle=True, random_state=0)
+# Set up possible values of parameters to optimize over
+p_grid = {"max_depth": [2, 4, 6, 8], "min_samples_leaf" : [1, 2, 3, 4, 5]}
+rf = tree.DecisionTreeClassifier(random_state=0)
+
 # Nested CV with parameter optimization
 clf = GridSearchCV(estimator=rf, param_grid=p_grid, cv=inner_cv)
 nested_score_tree = cross_val_score(clf, X=X, y=y, cv=outer_cv)
-print('Mean score of of {:6f} with std. dev. of {:6f}.'.format(nested_score_rf.mean(),nested_score_rf.std()))
-r = export_text(clf,X.columns)
+print('Mean score of of {:6f} with std. dev. of {:6f}.'.format(
+    nested_score_rf.mean(),
+    nested_score_rf.std()))
+
+clf.estimator.fit(X, y)
+r = export_text(clf.estimator, list(X.columns))
 print(r)   
