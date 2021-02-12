@@ -97,6 +97,10 @@ cv = StratifiedShuffleSplit(n_splits=100, test_size=.25, random_state=0)
 acc = cross_val_score(clf, X, yb, cv=cv,n_jobs=5, scoring=scoring)
 print(acc.mean())
 
-
+# 
+# is classification significantly good ?
+# Does a tree work ?
+# Feature importance
+# 
 
 plt.show(block=False)
