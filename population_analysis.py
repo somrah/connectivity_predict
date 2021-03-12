@@ -14,27 +14,29 @@ from sklearn.model_selection import (
 
 n_permutations = 1000
 scoring = 'neg_mean_squared_error'
-df = pd.read_csv('liste_patients_gliome_final_total.csv', index_col=0)
 
+"""
+df = pd.read_csv('liste_patients_gliome_final_total.csv', index_col=0)
 # Drop a column with only Nans
 df.drop(labels='CorticoThalamic_4', axis=1, inplace=True)
 networks = df.columns[:-3]
 X = df.values[:, :-3]
 y = df.values[:, -2] + 0.01 * df.values[:, -1] * np.sign(df.values[:, -2])
-
-"""
 X_ = X.copy()
+"""
+
 # Redo the thing the data with age
 df = pd.read_csv('liste_patients_gliome_final_total_avec_AGE_NSC.csv',
                  index_col=0)
 df = df[df.index.astype('str') != 'nan']
 df.drop(labels='CorticoThalamic_4', axis=1, inplace=True)
 networks = df.columns[:-4].tolist() + df.columns[-1:].tolist()
+networks = np.array(networks)
 
 X = np.hstack((df.values[:, :-4], df.values[:, -1:]))
 y = df.values[:, -3]
 # what about NSC ?
-"""
+
 
 plt.figure()
 plt.hist(y, bins=10)
@@ -98,7 +100,7 @@ print(mmae)
 
 """
 
-yb = y > 0
+yb = y > 1
 scoring = 'roc_auc'
 
 clf = RandomForestClassifier(max_depth=2)  # max_depth=2, max_features=1
@@ -112,7 +114,7 @@ print(acc.mean())
 
 clf.fit(X, yb)
 print(clf.feature_importances_)
-print(networks[np.argsort(clf.feature_importances_)[-5:]])
+print(np.array(networks)[np.argsort(clf.feature_importances_)[-5:]])
 
 plt.figure()
 plt.scatter(X[:, networks == 'Z_Score_TMT_Diff_pre'], y)
