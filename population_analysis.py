@@ -12,35 +12,45 @@ from sklearn.model_selection import (
     cross_val_score, ShuffleSplit, StratifiedShuffleSplit)
 
 
-n_permutations = 100
+n_permutations = 0
 scoring = 'neg_mean_squared_error'
-
-"""
-df = pd.read_csv('liste_patients_gliome_final_total.csv', index_col=0)
-# Drop a column with only Nans
-df.drop(labels='CorticoThalamic_4', axis=1, inplace=True)
-networks = df.columns[:-3]
-X = df.values[:, :-3]
-y = df.values[:, -2] + 0.01 * df.values[:, -1] * np.sign(df.values[:, -2])
-X_ = X.copy()
-"""
 
 # Redo the thing the data with age
 df = pd.read_csv('liste_patients_gliome_final_total_avec_AGE_NSC.csv',
                  index_col=0)
+df1 = pd.read_csv('probability.csv', index_col=0)
+df2 = pd.read_csv('proportion.csv', index_col=0)
+
 df = df[df.index.astype('str') != 'nan']
 df.drop(labels='CorticoThalamic_4', axis=1, inplace=True)
 networks = df.columns[:-4].tolist() + df.columns[-1:].tolist()
 networks = np.array(networks)
 
-X = np.hstack((df.values[:, :-4], df.values[:, -1:]))
-y = df.values[:, -3]
-# what about NSC ?
+others = df.columns[-5:-4].tolist() + df.columns[-1:].tolist()
+X_ = df[others].values
+
+X1 = np.hstack((df1.values, X_))
+X2 = np.hstack((df2.values, X_))
+
+# baseline
+labels = networks
+X = df[networks].values
+
+do_probability = False
+do_proportion = False
+
+if do_probability:
+    X = X1
+    labels = list(df1.columns) + others
+if do_proportion:
+    X = X2
+    labels = list(df2.columns) + others
 
 
+# get the target
+y = df['diff_diff'].values
 plt.figure()
 plt.hist(y, bins=10)
-
 
 # define classifier
 clf = RandomForestRegressor(max_depth=2)  # max_depth=2, max_features=1
@@ -48,11 +58,9 @@ clf = RandomForestRegressor(max_depth=2)  # max_depth=2, max_features=1
 #define cross_validation scheme
 cv = ShuffleSplit(n_splits=100, test_size=.25, random_state=0)
 
-
 # compute cross-val score
 r2_ = cross_val_score(clf, X, y, cv=cv,n_jobs=5)
 print(r2_.mean())
-
 
 mae_ = cross_val_score(clf, X, y, cv=cv, n_jobs=5,
                        scoring=scoring)
@@ -95,13 +103,14 @@ plt.hist(maes, bins=10)
 plt.plot(mmae, 0, '*r')
 """
 
+
 # attempt with GBT
 from sklearn.ensemble import GradientBoostingRegressor
 clf = GradientBoostingRegressor()
 mae_ = cross_val_score(clf, X, y, cv=cv, n_jobs=5,
                        scoring=scoring)
 mmae = mae_.mean()
-print(mmae)
+print('GBT: ', mmae)
 
 
 X = X[y < 1]
@@ -122,10 +131,8 @@ print(acc.mean())
 
 clf.fit(X, yb)
 print(clf.feature_importances_)
-print(np.array(networks)[np.argsort(clf.feature_importances_)[-5:]])
+print(np.array(labels)[np.argsort(clf.feature_importances_)[-5:]])
 
-# plt.figure()
-# plt.scatter(X[:, networks == 'Z_Score_TMT_Diff_pre'], y)
 
 # Make an ROC curve
 
@@ -149,10 +156,7 @@ plt.title('Receiver operating characteristic example')
 plt.legend(loc='lower right')
 plt.savefig('/tmp/roc.png')
 
-do_permutation = True
-if do_permutation:
-    # permutation test:
-    n_permutations = 1000
+if n_permutations > 0:
     y_ = yb.copy()
     accs = []
     for _ in range(n_permutations):
@@ -181,7 +185,7 @@ from sklearn import tree
 class_names = ['y<%f' % threshold, 'y>%f' % threshold,]
 plt.figure(figsize=(8, 8))
 annotations = tree.plot_tree(
-    clf, feature_names=networks, class_names=class_names,
+    clf, feature_names=labels, class_names=class_names,
     fontsize=6, impurity=False)
 plt.savefig('/tmp/tree.pdf', dpi=300)
 # plt.savefig('/tmp/tree.png', dpi=300)
