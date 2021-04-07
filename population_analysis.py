@@ -32,20 +32,22 @@ X_ = df[others].values
 X1 = np.hstack((df1.values, X_))
 X2 = np.hstack((df2.values, X_))
 
-# baseline
-labels = networks
-X = df[networks].values
-
 do_probability = False
 do_proportion = False
 
 if do_probability:
+    print('Probability table')
     X = X1
     labels = list(df1.columns) + others
-if do_proportion:
+elif do_proportion:
+    print('Proportion table')
     X = X2
     labels = list(df2.columns) + others
-
+else:
+    # baseline
+    print('Baseline table')
+    labels = networks
+    X = df[networks].values
 
 # get the target
 y = df['diff_diff'].values
@@ -132,7 +134,7 @@ acc = cross_val_score(clf, X, yb, cv=cv,n_jobs=5, scoring=scoring)
 print('Ternary accuracy, RF: ', acc.mean())
 
 clf.fit(X, yb)
-print(clf.feature_importances_)
+# print(clf.feature_importances_)
 print(np.array(labels)[np.argsort(clf.feature_importances_)[-5:]])
 
 
@@ -210,7 +212,7 @@ acc = cross_val_score(clf, X, yt, cv=cv,n_jobs=5, scoring=scoring)
 print('Ternary accuracy, RF: ', acc.mean())
 
 clf.fit(X, yt)
-print(clf.feature_importances_)
+# print(clf.feature_importances_)
 print(np.array(labels)[np.argsort(clf.feature_importances_)[-5:]])
 
 
