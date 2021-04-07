@@ -113,12 +113,14 @@ mmae = mae_.mean()
 print('GBT: ', mmae)
 
 
-X = X[y < 1]
-y = y[y < 1]
+# X = X[y < 1]
+# y = y[y < 1]
 
-threshold = -1.5
+threshold = 1.5
 yb = y > threshold
 scoring = 'roc_auc'
+class_names = ['y<%f' % threshold, 'y>%f' % threshold,]
+
 
 clf = RandomForestClassifier(max_depth=2)  # max_depth=2, max_features=1
 
@@ -127,7 +129,7 @@ cv = StratifiedShuffleSplit(n_splits=100, test_size=.25, random_state=0)
 
 # compute cross-val score
 acc = cross_val_score(clf, X, yb, cv=cv,n_jobs=5, scoring=scoring)
-print(acc.mean())
+print('Ternary accuracy, RF: ', acc.mean())
 
 clf.fit(X, yb)
 print(clf.feature_importances_)
@@ -172,7 +174,7 @@ if n_permutations > 0:
 from sklearn.tree import DecisionTreeClassifier
 clf = DecisionTreeClassifier(max_depth=3)
 acc = cross_val_score(clf, X, yb, cv=cv,n_jobs=5, scoring=scoring)
-print(acc.mean())
+print('Binary accuracy, tree: ', acc.mean())
 
 
 # 
@@ -182,7 +184,7 @@ print(acc.mean())
 # add age
 clf.fit(X, yb)
 from sklearn import tree
-class_names = ['y<%f' % threshold, 'y>%f' % threshold,]
+
 plt.figure(figsize=(8, 8))
 annotations = tree.plot_tree(
     clf, feature_names=labels, class_names=class_names,
@@ -192,7 +194,60 @@ plt.savefig('/tmp/tree.pdf', dpi=300)
 plt.savefig('/tmp/tree.svg')
 
 
+#############################################################################
+# Three-way classification
+yt = (y > -1.5).astype(int) +  (y > 1.5).astype(int)
+scoring = 'roc_auc_ovr'
+class_names = ['y < -1.5', '-1.5 < y< 1.5', 'y > 1.5']
 
+clf = RandomForestClassifier(max_depth=2)  # max_depth=2, max_features=1
+
+#define cross_validation scheme
+cv = StratifiedShuffleSplit(n_splits=100, test_size=.25, random_state=0)
+
+# compute cross-val score
+acc = cross_val_score(clf, X, yt, cv=cv,n_jobs=5, scoring=scoring)
+print('Ternary accuracy, RF: ', acc.mean())
+
+clf.fit(X, yt)
+print(clf.feature_importances_)
+print(np.array(labels)[np.argsort(clf.feature_importances_)[-5:]])
+
+
+# Make an ROC curve
+
+from sklearn import metrics
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, yt, test_size=.5,
+                                                    random_state=0)
+
+y_score = clf.fit(X_train, y_train).predict_proba(X_test)
+fpr, tpr, thresholds = metrics.roc_curve(y_test, y_score.T[0], pos_label=0)
+lw = 2
+plt.figure()
+plt.plot(fpr, tpr, color='darkorange',
+         lw=lw, label='ROC curve (area = %0.2f)' % np.mean(acc))
+plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic, ternary problem ')
+plt.legend(loc='lower right')
+plt.savefig('/tmp/roc_ternary.png')
+
+
+clf = DecisionTreeClassifier(max_depth=3)
+acc = cross_val_score(clf, X, yt, cv=cv,n_jobs=5, scoring=scoring)
+print('Ternary accuracy, tree: ', acc.mean())
+clf.fit(X, yt)
+
+plt.figure(figsize=(8, 8))
+annotations = tree.plot_tree(
+    clf, feature_names=labels, class_names=class_names,
+    fontsize=6, impurity=False)
+plt.savefig('/tmp/tree_ternary.pdf', dpi=300)
+plt.savefig('/tmp/tree._ternary.svg')
 
 
 plt.show(block=False)
