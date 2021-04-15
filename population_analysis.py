@@ -26,7 +26,7 @@ X_ = X.copy()
 """
 
 # Redo the thing the data with age
-df = pd.read_csv('liste_patients_gliome_final_total_avec_AGE_NSC.csv',
+df = pd.read_csv('liste_patients_gliome_final_total_avec_AGE_NSC.csv', sep=';',
                  index_col=0)
 df = df[df.index.astype('str') != 'nan']
 df.drop(labels='CorticoThalamic_4', axis=1, inplace=True)
@@ -100,7 +100,7 @@ print(mmae)
 
 """
 
-yb = y > 1
+yb = y < -1
 scoring = 'roc_auc'
 
 clf = RandomForestClassifier(max_depth=2)  # max_depth=2, max_features=1
