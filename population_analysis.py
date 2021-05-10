@@ -21,10 +21,8 @@ n_permutations = 1000
 scoring = 'neg_mean_squared_error'
 
 # Redo the thing the data with age
-df = pd.read_csv('liste_patients_gliome_final_total_avec_AGE_NSC.csv',
+df = pd.read_csv('liste_patients_gliome_final_total_avec_AGE_NSC.csv', sep=';',
                  index_col=0)
-df1 = pd.read_csv('probability.csv', index_col=0)
-df2 = pd.read_csv('proportion.csv', index_col=0)
 
 df = df[df.index.astype('str') != 'nan']
 df.drop(labels='CorticoThalamic_4', axis=1, inplace=True)
@@ -35,8 +33,12 @@ networks = np.array(networks)
 others = df.columns[-5:-4].tolist() + df.columns[-1:].tolist()
 X_ = df[others].values
 
+"""
+df1 = pd.read_csv('probability.csv', index_col=0)
+df2 = pd.read_csv('proportion.csv', index_col=0)
 X1 = np.hstack((df1.values, X_))
 X2 = np.hstack((df2.values, X_))
+"""
 
 do_probability = False
 do_proportion = False
@@ -90,8 +92,7 @@ mae_ = cross_val_score(clf, X, y, cv=cv, n_jobs=5,
                        scoring=scoring)
 mmae = mae_.mean()
 print('GBT: ', mmae)
-"""
-"""
+
 ###############################################################################
 # Binary classification
 
@@ -100,6 +101,7 @@ print('GBT: ', mmae)
 
 threshold = 1.5
 yb = y > threshold
+
 scoring = 'roc_auc'
 class_names = ['y<%f' % threshold, 'y>%f' % threshold,]
 
