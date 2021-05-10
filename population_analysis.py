@@ -10,9 +10,14 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.model_selection import (
     cross_val_score, ShuffleSplit, StratifiedShuffleSplit)
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import RidgeCV
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn import metrics
+from sklearn.model_selection import train_test_split
+from sklearn import tree
 
-
-n_permutations = 0
+n_permutations = 1000
 scoring = 'neg_mean_squared_error'
 
 # Redo the thing the data with age
@@ -23,6 +28,7 @@ df2 = pd.read_csv('proportion.csv', index_col=0)
 
 df = df[df.index.astype('str') != 'nan']
 df.drop(labels='CorticoThalamic_4', axis=1, inplace=True)
+df['Z_Score_TMT_Diff_pre'] *= -1  # make more sense
 networks = df.columns[:-4].tolist() + df.columns[-1:].tolist()
 networks = np.array(networks)
 
@@ -55,11 +61,12 @@ plt.figure()
 plt.hist(y, bins=10)
 
 # define classifier
-clf = RandomForestRegressor(max_depth=2)  # max_depth=2, max_features=1
+clf = RandomForestRegressor()  # max_depth=2, max_features=1
 
 #define cross_validation scheme
 cv = ShuffleSplit(n_splits=100, test_size=.25, random_state=0)
 
+"""
 # compute cross-val score
 r2_ = cross_val_score(clf, X, y, cv=cv,n_jobs=5)
 print(r2_.mean())
@@ -69,51 +76,24 @@ mae_ = cross_val_score(clf, X, y, cv=cv, n_jobs=5,
 mmae = mae_.mean()
 print('rf:', mmae)
 
-"""
-# compare to permutation distribution
-maes = []
-y_ = y.copy()
-for _ in range(n_permutations):
-    np.random.shuffle(y_)
-    maes_ = cross_val_score(clf, X, y_, cv=cv, n_jobs=5,
-                       scoring=scoring)
-    maes.append(np.mean(maes_))
-
-plt.figure()
-plt.hist(maes, bins=10)
-plt.plot(mmae, 0, '*r')
-print(np.sum(maes > mmae))
-"""
 
 # attempt with Ridge regression
-from sklearn.linear_model import RidgeCV
 clf = RidgeCV()
 mae_ = cross_val_score(clf, X, y, cv=cv, n_jobs=5,
                        scoring=scoring)
 mmae = mae_.mean()
 print('ridge:', mmae)
-"""
-for _ in range(n_permutations):
-    np.random.shuffle(y_)
-    maes_ = cross_val_score(clf, X, y_, cv=cv, n_jobs=5,
-                       scoring=scoring)
-    maes.append(np.mean(maes_))
-print(np.sum(maes > mmae))
-
-plt.figure()
-plt.hist(maes, bins=10)
-plt.plot(mmae, 0, '*r')
-"""
-
 
 # attempt with GBT
-from sklearn.ensemble import GradientBoostingRegressor
 clf = GradientBoostingRegressor()
 mae_ = cross_val_score(clf, X, y, cv=cv, n_jobs=5,
                        scoring=scoring)
 mmae = mae_.mean()
 print('GBT: ', mmae)
-
+"""
+"""
+###############################################################################
+# Binary classification
 
 # X = X[y < 1]
 # y = y[y < 1]
@@ -131,7 +111,7 @@ cv = StratifiedShuffleSplit(n_splits=100, test_size=.25, random_state=0)
 
 # compute cross-val score
 acc = cross_val_score(clf, X, yb, cv=cv,n_jobs=5, scoring=scoring)
-print('Ternary accuracy, RF: ', acc.mean())
+print('Binary accuracy, RF: ', acc.mean())
 
 clf.fit(X, yb)
 # print(clf.feature_importances_)
@@ -139,9 +119,6 @@ print(np.array(labels)[np.argsort(clf.feature_importances_)[-5:]])
 
 
 # Make an ROC curve
-
-from sklearn import metrics
-from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, yb, test_size=.5,
                                                     random_state=0)
 
@@ -173,7 +150,7 @@ if n_permutations > 0:
 
 
 # try with single tree
-from sklearn.tree import DecisionTreeClassifier
+
 clf = DecisionTreeClassifier(max_depth=3)
 acc = cross_val_score(clf, X, yb, cv=cv,n_jobs=5, scoring=scoring)
 print('Binary accuracy, tree: ', acc.mean())
@@ -185,16 +162,14 @@ print('Binary accuracy, tree: ', acc.mean())
 # Feature importance
 # add age
 clf.fit(X, yb)
-from sklearn import tree
 
 plt.figure(figsize=(8, 8))
 annotations = tree.plot_tree(
     clf, feature_names=labels, class_names=class_names,
     fontsize=6, impurity=False)
 plt.savefig('/tmp/tree.pdf', dpi=300)
-# plt.savefig('/tmp/tree.png', dpi=300)
 plt.savefig('/tmp/tree.svg')
-
+"""
 
 #############################################################################
 # Three-way classification
@@ -202,7 +177,7 @@ yt = (y > -1.5).astype(int) +  (y > 1.5).astype(int)
 scoring = 'roc_auc_ovr'
 class_names = ['y < -1.5', '-1.5 < y< 1.5', 'y > 1.5']
 
-clf = RandomForestClassifier(max_depth=2)  # max_depth=2, max_features=1
+clf = RandomForestClassifier()  # max_depth=2, max_features=1
 
 #define cross_validation scheme
 cv = StratifiedShuffleSplit(n_splits=100, test_size=.25, random_state=0)
@@ -210,14 +185,10 @@ cv = StratifiedShuffleSplit(n_splits=100, test_size=.25, random_state=0)
 # compute cross-val score
 acc = cross_val_score(clf, X, yt, cv=cv,n_jobs=5, scoring=scoring)
 print('Ternary accuracy, RF: ', acc.mean())
-
 clf.fit(X, yt)
-# print(clf.feature_importances_)
 print(np.array(labels)[np.argsort(clf.feature_importances_)[-5:]])
 
-
 # Make an ROC curve
-
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, yt, test_size=.5,
@@ -239,17 +210,77 @@ plt.legend(loc='lower right')
 plt.savefig('/tmp/roc_ternary.png')
 
 
+if n_permutations > 0:
+    y_ = yt.copy()
+    accs = []
+    macc = np.mean(
+        cross_val_score(clf, X, yt, cv=cv,n_jobs=5, scoring=scoring))
+    for _ in range(n_permutations):
+        np.random.shuffle(y_)
+        acc_ = cross_val_score(clf, X, y_, cv=cv, n_jobs=5,
+                               scoring=scoring)
+        accs.append(np.mean(acc_))
+    print('accuracy:', macc, 'p-value, baseline',
+          (1 + np.sum(accs > macc)) * 1. / n_permutations)
+    macc = np.mean(
+        cross_val_score(clf, X1, yt, cv=cv,n_jobs=5, scoring=scoring))
+    for _ in range(n_permutations):
+        np.random.shuffle(y_)
+        acc_ = cross_val_score(clf, X1, y_, cv=cv, n_jobs=5,
+                               scoring=scoring)
+        accs.append(np.mean(acc_))
+    print('accuracy:', macc, 'p-value, probability',
+          (1 + np.sum(accs > macc)) * 1. / n_permutations)
+    macc = np.mean(
+        cross_val_score(clf, X2, yt, cv=cv,n_jobs=5, scoring=scoring))
+    for _ in range(n_permutations):
+        np.random.shuffle(y_)
+        acc_ = cross_val_score(clf, X2, y_, cv=cv, n_jobs=5,
+                               scoring=scoring)
+        accs.append(np.mean(acc_))
+    print('accuracy:', macc, 'p-value, proportion',
+          (1 + np.sum(accs > macc)) * 1. / n_permutations)
+
+
+    
 clf = DecisionTreeClassifier(max_depth=3)
 acc = cross_val_score(clf, X, yt, cv=cv,n_jobs=5, scoring=scoring)
 print('Ternary accuracy, tree: ', acc.mean())
 clf.fit(X, yt)
 
-plt.figure(figsize=(8, 8))
+plt.figure(figsize=(9, 6))
 annotations = tree.plot_tree(
     clf, feature_names=labels, class_names=class_names,
-    fontsize=6, impurity=False)
+    fontsize=6, impurity=False, filled=True, rounded=True)
 plt.savefig('/tmp/tree_ternary.pdf', dpi=300)
-plt.savefig('/tmp/tree._ternary.svg')
+plt.savefig('/tmp/tree_ternary.svg')
 
+# bootstrap
+cv = StratifiedShuffleSplit(n_splits=5, test_size=.25, random_state=0)
+for i, (train_index, test_index) in enumerate(cv.split(X, yt)):
+    X_train, y_test = X[train_index], yt[train_index]
+    clf.fit(X_train, y_test)
+    plt.figure(figsize=(9, 6))
+    tree.plot_tree(
+        clf, feature_names=labels, class_names=class_names,
+        fontsize=6, impurity=False, filled=True, rounded=True)
+    plt.savefig('/tmp/tree_ternary_%02d.svg' % i, dpi=300)
+    plt.close()
+
+##########################################################################
+# compare accuracy of baseline vs proportion vs probability
+# probability: X = X1
+# proportion X = X2
+# baseline X = df[networks].values
+clf = RandomForestClassifier()
+cv = StratifiedShuffleSplit(n_splits=100, test_size=.25, random_state=1)
+
+acc_baseline = cross_val_score(clf, X, yt, cv=cv,n_jobs=5, scoring=scoring)
+acc_probability = cross_val_score(clf, X1, yt, cv=cv,n_jobs=5, scoring=scoring)
+acc_proportion = cross_val_score(clf, X2, yt, cv=cv,n_jobs=5, scoring=scoring)
+accuracies = np.vstack((acc_baseline, acc_probability, acc_proportion))
+argmax_accuracy = np.argmax(accuracies, 0)
+idx, counts = np.unique(argmax_accuracy, return_counts=True)
+print(idx, counts)
 
 plt.show(block=False)
